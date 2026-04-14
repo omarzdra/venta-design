@@ -1,0 +1,77 @@
+{
+  "materials": [
+    {
+      "id": 1,
+      "code": "FOL-001",
+      "name": "Oracal 651 White",
+      "unit": "m",
+      "quantity": 39,
+      "minQuantity": 10,
+      "category": "folija",
+      "price": 8.5,
+      "updatedAt": "2026-04-14T12:26:01.645Z"
+    },
+    {
+      "id": 2,
+      "code": "FOL-002",
+      "name": "Oracal 651 Black",
+      "unit": "m",
+      "quantity": 18,
+      "minQuantity": 8,
+      "category": "folija",
+      "price": 8.5,
+      "updatedAt": "2026-04-14T10:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "code": "PLA-001",
+      "name": "PVC poster material",
+      "unit": "m2",
+      "quantity": 25,
+      "minQuantity": 5,
+      "category": "plakat",
+      "price": 12,
+      "updatedAt": "2026-04-14T10:00:00.000Z"
+    },
+    {
+      "id": 4,
+      "code": "CAR-001",
+      "name": "Car wrap matte grey",
+      "unit": "m",
+      "quantity": 12,
+      "minQuantity": 4,
+      "category": "car wrapping",
+      "price": 15.2,
+      "updatedAt": "2026-04-14T10:00:00.000Z"
+    }
+  ],
+  "workOrders": [
+    {
+      "id": 1776169561645,
+      "title": "Izdelava plakata",
+      "customer": "Nebitno",
+      "notes": "voisnevd",
+      "items": [
+        {
+          "materialId": 1,
+          "materialName": "Oracal 651 White",
+          "quantity": 3,
+          "unit": "m"
+        }
+      ],
+      "createdAt": "2026-04-14T12:26:01.645Z"
+    }
+  ],
+  "movementLog": [
+    {
+      "id": 1776169561647.6943,
+      "type": "work_order_consumption",
+      "workOrderId": 1776169561645,
+      "materialId": 1,
+      "materialName": "Oracal 651 White",
+      "quantity": 3,
+      "unit": "m",
+      "createdAt": "2026-04-14T12:26:01.645Z"
+    }
+  ]
+}
