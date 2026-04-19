@@ -11,20 +11,21 @@ server.use(jsonServer.bodyParser);
 // Custom response formatting to dynamically inject aggregated values
 router.render = (req, res) => {
     let data = res.locals.data;
+    const db = router.db;
     
-    // Check if the route is requesting 'produkti' (can be collection or single item)
-    // Note: this is a simple check, could be more robust
+    // Global filter for non-zero lots to ensure we don't return "empty" records to UI
+    const allLots = db.get("lot_produkti").value() || [];
+    const activeLots = allLots.filter(l => Number(l.kolicina_tm) > 0);
+    
     if (req.originalUrl.startsWith("/produkti") && req.method === "GET") {
-        const db = router.db;
-        const allLots = db.get("lot_produkti").value() || [];
-        
         const attachAggregates = (produkt) => {
-            const produktLots = allLots.filter(l => Number(l.produkt_id) === Number(produkt.id));
+            const produktLots = activeLots.filter(l => Number(l.produkt_id) === Number(produkt.id));
             const kolicina_tm = produktLots.reduce((sum, lot) => sum + Number(lot.kolicina_tm), 0);
+            const vrednost_zaloge = produktLots.reduce((sum, lot) => sum + (Number(lot.kolicina_tm) * Number(lot.nabavna_cena)), 0);
             return {
                 ...produkt,
                 kolicina_tm,
-                vrednost_zaloge: kolicina_tm * Number(produkt.nabavna_cena)
+                vrednost_zaloge
             };
         };
 
@@ -32,6 +33,13 @@ router.render = (req, res) => {
             data = data.map(attachAggregates);
         } else if (data && typeof data === "object") {
             data = attachAggregates(data);
+        }
+    }
+
+    // Also filter result if direct LOT access
+    if (req.originalUrl.startsWith("/lot_produkti") && req.method === "GET") {
+        if (Array.isArray(data)) {
+            data = data.filter(l => Number(l.kolicina_tm) > 0);
         }
     }
 
@@ -45,14 +53,12 @@ const addEvidenca = (db, logData) => {
 };
 
 const depleteMaterials = (db, materiali, reqBody, res) => {
-    // Return true if successful, return response object with error if failed
     if (!Array.isArray(materiali) || materiali.length === 0) {
-        return true; // No materials to consume
+        return true; 
     }
     
     const now = new Date().toISOString();
     
-    // Validate first
     for (const item of materiali) {
         const lot = db.get("lot_produkti").find({ id: Number(item.lot_produkt_id) }).value();
         if (!lot) {
@@ -67,26 +73,28 @@ const depleteMaterials = (db, materiali, reqBody, res) => {
         }
     }
 
-    // Now deplete
     for (const item of materiali) {
         const lot = db.get("lot_produkti").find({ id: Number(item.lot_produkt_id) }).value();
         const produkt = db.get("produkti").find({ id: Number(lot.produkt_id) }).value();
         const qtyUsed = Number(item.kolicina_uporabljenega_produkta);
+        const newQty = lot.kolicina_tm - qtyUsed;
 
-        // Update lot quantity
-        db.get("lot_produkti")
-            .find({ id: lot.id })
-            .assign({ kolicina_tm: lot.kolicina_tm - qtyUsed })
-            .write();
+        if (newQty <= 0) {
+            db.get("lot_produkti").remove({ id: lot.id }).write();
+        } else {
+            db.get("lot_produkti")
+                .find({ id: lot.id })
+                .assign({ kolicina_tm: newQty })
+                .write();
+        }
 
-        // Create evidencija (Prodaja)
         addEvidenca(db, {
             datum: now,
             lot_produkt_id: lot.id,
             naziv_produkta: produkt ? produkt.naziv_produkta : "Neznan",
             tip: "prodaja",
-            stevilka_racuna: reqBody.id ? `DN-${reqBody.id}` : "", // Best effort
-            nabavna_cena: produkt ? produkt.nabavna_cena : 0,
+            stevilka_racuna: reqBody.id ? `DN-${reqBody.id}` : "", 
+            nabavna_cena: lot.nabavna_cena || (produkt ? produkt.nabavna_cena : 0),
             popust: 0,
             dobavitelj: "Lastna poraba (Delovna Naloga)",
             kolicina_tm: qtyUsed
@@ -96,29 +104,41 @@ const depleteMaterials = (db, materiali, reqBody, res) => {
     return true;
 };
 
-// Route: Add LOT and automatically record Prevzem
 server.post("/lot_produkti", (req, res, next) => {
     const db = router.db;
-    const { produkt_id, lot_stevilka, kolicina_tm } = req.body;
+    const { produkt_id, lot_stevilka, kolicina_tm, nabavna_cena, prodajna_cena, datum_prevzema } = req.body;
     
     const produkt = db.get("produkti").find({ id: Number(produkt_id) }).value();
     if (!produkt) {
         return res.status(400).json({ message: `Produkt z ID ${produkt_id} ne obstaja.` });
     }
 
-    // Assign temporary ID so we can persist
+    const finalNabavna = nabavna_cena !== undefined && nabavna_cena !== "" ? Number(nabavna_cena) : Number(produkt.nabavna_cena);
+    const finalProdajna = prodajna_cena !== undefined && prodajna_cena !== "" ? Number(prodajna_cena) : Number(produkt.prodajna_cena);
+
+    db.get("produkti")
+        .find({ id: Number(produkt_id) })
+        .assign({ 
+            nabavna_cena: finalNabavna,
+            prodajna_cena: finalProdajna
+        })
+        .write();
+
     const newLotId = Date.now();
     req.body.id = newLotId;
     req.body.produkt_id = Number(produkt_id);
     req.body.kolicina_tm = Number(kolicina_tm);
+    req.body.nabavna_cena = finalNabavna;
+    req.body.prodajna_cena = finalProdajna;
+    req.body.datum_prevzema = datum_prevzema || new Date().toISOString();
 
     addEvidenca(db, {
-        datum: new Date().toISOString(),
+        datum: req.body.datum_prevzema,
         lot_produkt_id: newLotId,
         naziv_produkta: produkt.naziv_produkta,
         tip: "prevzem",
-        stevilka_racuna: req.body.stevilka_racuna || "N/A", // From the form if passed
-        nabavna_cena: produkt.nabavna_cena,
+        stevilka_racuna: req.body.stevilka_racuna || "N/A", 
+        nabavna_cena: finalNabavna,
         popust: req.body.popust || 0,
         dobavitelj: req.body.dobavitelj || "Splošni Dobavitelj",
         kolicina_tm: Number(kolicina_tm)

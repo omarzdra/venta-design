@@ -5,339 +5,299 @@
       "koda": "FOL-001",
       "naziv_produkta": "Oracal 651 White",
       "prodajna_cena": 15,
-      "nabavna_cena": 8.5
+      "nabavna_cena": 5,
+      "tip": "folija"
     },
     {
       "id": 2,
       "koda": "FOL-002",
       "naziv_produkta": "Oracal 651 Black",
       "prodajna_cena": 15,
-      "nabavna_cena": 8.5
+      "nabavna_cena": 5,
+      "tip": "folija"
     },
     {
       "id": 3,
-      "koda": "PLA-001",
-      "naziv_produkta": "PVC poster material",
-      "prodajna_cena": 20,
-      "nabavna_cena": 12
+      "koda": "ADR-001",
+      "naziv_produkta": "Montažno strgalo na palici",
+      "prodajna_cena": 25,
+      "nabavna_cena": 12,
+      "tip": "adr oprema"
     },
     {
       "id": 4,
       "koda": "CAR-001",
       "naziv_produkta": "Car wrap matte grey",
-      "prodajna_cena": 25,
-      "nabavna_cena": 15.2
+      "prodajna_cena": 30,
+      "nabavna_cena": 20,
+      "tip": "folija"
     }
   ],
   "lot_produkti": [
     {
       "id": 1,
       "produkt_id": 1,
-      "lot_stevilka": "LOT-WH-26A",
-      "kolicina_tm": 15
+      "lot_stevilka": "LOT-WH-A1",
+      "kolicina_tm": 10,
+      "nabavna_cena": 5,
+      "prodajna_cena": 15,
+      "datum_prevzema": "2026-04-18T10:00:00.000Z"
     },
     {
       "id": 2,
       "produkt_id": 1,
-      "lot_stevilka": "LOT-WH-26B",
-      "kolicina_tm": 28
-    },
-    {
-      "id": 3,
-      "produkt_id": 2,
-      "lot_stevilka": "LOT-BL-26A",
-      "kolicina_tm": 18
-    },
-    {
-      "id": 4,
-      "produkt_id": 3,
-      "lot_stevilka": "LOT-P-26A",
-      "kolicina_tm": 25
-    },
-    {
-      "id": 5,
-      "produkt_id": 4,
-      "lot_stevilka": "LOT-CH-26A",
-      "kolicina_tm": 11
+      "lot_stevilka": "LOT-WH-A2",
+      "kolicina_tm": 10,
+      "nabavna_cena": 6,
+      "prodajna_cena": 16,
+      "datum_prevzema": "2026-04-19T09:00:00.000Z"
     },
     {
       "produkt_id": 4,
-      "lot_stevilka": "BAT-1021",
-      "kolicina_tm": 33,
-      "dobavitelj": "Venta",
-      "stevilka_racuna": "112233",
-      "id": 1776379666467
-    },
-    {
-      "produkt_id": 4,
-      "lot_stevilka": "BAT-100",
-      "kolicina_tm": 2,
-      "dobavitelj": "",
-      "stevilka_racuna": "",
-      "id": 1776379864708
+      "lot_stevilka": "123456789",
+      "kolicina_tm": 38.1,
+      "dobavitelj": "Mitja",
+      "stevilka_racuna": "123456789",
+      "nabavna_cena": 15,
+      "prodajna_cena": 30,
+      "datum_prevzema": "2026-04-19T21:13:25.018Z",
+      "id": 1776633205018
     }
   ],
   "evidencija_zaloge": [
     {
       "id": 1,
-      "datum": "2026-04-14T10:00:00.000Z",
+      "datum": "2026-04-18T10:00:00.000Z",
       "lot_produkt_id": 1,
       "naziv_produkta": "Oracal 651 White",
       "tip": "prevzem",
       "stevilka_racuna": "INV-1001",
-      "nabavna_cena": 8.5,
+      "nabavna_cena": 5,
       "popust": 0,
-      "dobavitelj": "Dobavitelj X",
-      "kolicina_tm": 15
+      "dobavitelj": "FolijaX",
+      "kolicina_tm": 10
     },
     {
       "id": 2,
-      "datum": "2026-04-14T10:15:00.000Z",
+      "datum": "2026-04-19T09:00:00.000Z",
       "lot_produkt_id": 2,
       "naziv_produkta": "Oracal 651 White",
       "tip": "prevzem",
       "stevilka_racuna": "INV-1002",
-      "nabavna_cena": 8.5,
+      "nabavna_cena": 6,
       "popust": 0,
-      "dobavitelj": "Dobavitelj X",
-      "kolicina_tm": 28
+      "dobavitelj": "FolijaX",
+      "kolicina_tm": 10
     },
     {
       "id": 3,
-      "datum": "2026-04-14T10:20:00.000Z",
+      "datum": "2026-04-19T10:00:00.000Z",
       "lot_produkt_id": 3,
-      "naziv_produkta": "Oracal 651 Black",
+      "naziv_produkta": "Montažno strgalo na palici",
       "tip": "prevzem",
       "stevilka_racuna": "INV-1003",
-      "nabavna_cena": 8.5,
-      "popust": 5,
-      "dobavitelj": "Dobavitelj Y",
-      "kolicina_tm": 18
-    },
-    {
-      "id": 4,
-      "datum": "2026-04-14T10:25:00.000Z",
-      "lot_produkt_id": 4,
-      "naziv_produkta": "PVC poster material",
-      "tip": "prevzem",
-      "stevilka_racuna": "INV-1004",
       "nabavna_cena": 12,
       "popust": 0,
-      "dobavitelj": "Dobavitelj X",
-      "kolicina_tm": 25
-    },
-    {
-      "id": 5,
-      "datum": "2026-04-14T10:30:00.000Z",
-      "lot_produkt_id": 5,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "prevzem",
-      "stevilka_racuna": "INV-1005",
-      "nabavna_cena": 15.2,
-      "popust": 0,
-      "dobavitelj": "Dobavitelj Z",
-      "kolicina_tm": 12
-    },
-    {
-      "id": 1776379666467.7434,
-      "datum": "2026-04-16T22:47:46.467Z",
-      "lot_produkt_id": 1776379666467,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "prevzem",
-      "stevilka_racuna": "112233",
-      "nabavna_cena": 15.2,
-      "popust": 0,
-      "dobavitelj": "Venta",
+      "dobavitelj": "ADR Center",
       "kolicina_tm": 50
     },
     {
-      "id": 1776379760780.0864,
-      "datum": "2026-04-16T22:49:20.776Z",
-      "lot_produkt_id": 1776379666467,
-      "naziv_produkta": "Neznan",
+      "id": 1776633205018.2515,
+      "datum": "2026-04-19T21:13:25.018Z",
+      "lot_produkt_id": 1776633205018,
+      "naziv_produkta": "Car wrap matte grey",
+      "tip": "prevzem",
+      "stevilka_racuna": "123456789",
+      "nabavna_cena": 15,
+      "popust": 0,
+      "dobavitelj": "Mitja",
+      "kolicina_tm": 50
+    },
+    {
+      "id": 1776633352067.616,
+      "datum": "2026-04-19T21:15:52.067Z",
+      "lot_produkt_id": 1776633352067,
+      "naziv_produkta": "Car wrap matte grey",
+      "tip": "prevzem",
+      "stevilka_racuna": "N/A",
+      "nabavna_cena": 20,
+      "popust": 0,
+      "dobavitelj": "Mitja",
+      "kolicina_tm": 10
+    },
+    {
+      "id": 1776633654742.5999,
+      "datum": "2026-04-19T21:20:54.739Z",
+      "lot_produkt_id": 1776633352067,
+      "naziv_produkta": "Car wrap matte grey",
       "tip": "prodaja",
-      "stevilka_racuna": "DN-1776379760775",
-      "nabavna_cena": 0,
+      "stevilka_racuna": "DN-1776633654738",
+      "nabavna_cena": 20,
       "popust": 0,
       "dobavitelj": "Lastna poraba (Delovna Naloga)",
       "kolicina_tm": 10
     },
     {
-      "id": 1776379760786.482,
-      "datum": "2026-04-16T22:49:20.776Z",
-      "lot_produkt_id": 5,
+      "id": 1776633783913.4622,
+      "datum": "2026-04-19T21:23:03.911Z",
+      "lot_produkt_id": 1776633205018,
       "naziv_produkta": "Car wrap matte grey",
       "tip": "prodaja",
-      "stevilka_racuna": "DN-1776379760775",
-      "nabavna_cena": 15.2,
+      "stevilka_racuna": "DN-1776633783911",
+      "nabavna_cena": 15,
+      "popust": 0,
+      "dobavitelj": "Lastna poraba (Delovna Naloga)",
+      "kolicina_tm": 10
+    },
+    {
+      "id": 1776634166731.648,
+      "datum": "2026-04-19T21:29:26.728Z",
+      "lot_produkt_id": 1776633205018,
+      "naziv_produkta": "Car wrap matte grey",
+      "tip": "prodaja",
+      "stevilka_racuna": "DN-1776634166728",
+      "nabavna_cena": 15,
+      "popust": 0,
+      "dobavitelj": "Lastna poraba (Delovna Naloga)",
+      "kolicina_tm": 0.9
+    },
+    {
+      "id": 1776634200936.258,
+      "datum": "2026-04-19T21:30:00.931Z",
+      "lot_produkt_id": 1776633205018,
+      "naziv_produkta": "Car wrap matte grey",
+      "tip": "prodaja",
+      "stevilka_racuna": "DN-1776634200931",
+      "nabavna_cena": 15,
       "popust": 0,
       "dobavitelj": "Lastna poraba (Delovna Naloga)",
       "kolicina_tm": 1
     },
     {
-      "id": 1776379864708.4475,
-      "datum": "2026-04-16T22:51:04.708Z",
-      "lot_produkt_id": 1776379864708,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "prevzem",
-      "stevilka_racuna": "N/A",
-      "nabavna_cena": 15.2,
-      "popust": 0,
-      "dobavitelj": "Splošni Dobavitelj",
-      "kolicina_tm": 4
-    },
-    {
-      "id": 1776380318228.7551,
-      "datum": "2026-04-16T22:58:38.225Z",
-      "lot_produkt_id": 1776379864708,
-      "naziv_produkta": "Car wrap matte grey",
+      "id": 1776635151980.951,
+      "datum": "2026-04-19T21:45:51.977Z",
+      "lot_produkt_id": 3,
+      "naziv_produkta": "Montažno strgalo na palici",
       "tip": "prodaja",
-      "stevilka_racuna": "DN-1776380318225",
-      "nabavna_cena": 15.2,
+      "stevilka_racuna": "DN-1776635151977",
+      "nabavna_cena": 12,
       "popust": 0,
       "dobavitelj": "Lastna poraba (Delovna Naloga)",
-      "kolicina_tm": 1
-    },
-    {
-      "id": 1776380976452.2249,
-      "datum": "2026-04-16T23:09:36.450Z",
-      "lot_produkt_id": 1776379864708,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "storno",
-      "stevilka_racuna": "DN-1776380318225",
-      "nabavna_cena": 15.2,
-      "popust": 0,
-      "dobavitelj": "Popravek/Storno Delovne Naloge",
-      "kolicina_tm": 1
-    },
-    {
-      "id": 1776380976457.5164,
-      "datum": "2026-04-16T23:09:36.455Z",
-      "lot_produkt_id": 1776379864708,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "prodaja",
-      "stevilka_racuna": "",
-      "nabavna_cena": 15.2,
-      "popust": 0,
-      "dobavitelj": "Lastna poraba (Delovna Naloga)",
-      "kolicina_tm": 1
-    },
-    {
-      "id": 1776380976460.3762,
-      "datum": "2026-04-16T23:09:36.455Z",
-      "lot_produkt_id": 1776379666467,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "prodaja",
-      "stevilka_racuna": "",
-      "nabavna_cena": 15.2,
-      "popust": 0,
-      "dobavitelj": "Lastna poraba (Delovna Naloga)",
-      "kolicina_tm": 2
-    },
-    {
-      "id": 1776410384205.5525,
-      "datum": "2026-04-17T07:19:44.196Z",
-      "lot_produkt_id": 1776379864708,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "prodaja",
-      "stevilka_racuna": "DN-1776410384195",
-      "nabavna_cena": 15.2,
-      "popust": 0,
-      "dobavitelj": "Lastna poraba (Delovna Naloga)",
-      "kolicina_tm": 1
-    },
-    {
-      "id": 1776410384210.3257,
-      "datum": "2026-04-17T07:19:44.196Z",
-      "lot_produkt_id": 1776379666467,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "prodaja",
-      "stevilka_racuna": "DN-1776410384195",
-      "nabavna_cena": 15.2,
-      "popust": 0,
-      "dobavitelj": "Lastna poraba (Delovna Naloga)",
-      "kolicina_tm": 5
+      "kolicina_tm": 50
     }
   ],
   "delovne_naloge_plakati": [
     {
-      "naziv_projekta": "ubu",
-      "opis": "ugui",
+      "status": "v pripravi",
+      "naziv_projekta": "bf",
+      "opis": "ntd",
       "narocnik": {
-        "ime_narocnika": "iin",
+        "ime_narocnika": "ntd",
         "gsm_stevilka": "",
-        "email_narocnika": "in"
+        "email_narocnika": "ntd"
       },
       "slike": [],
       "materiali": [
         {
-          "lot_produkt_id": "1776379864708",
-          "kolicina_uporabljenega_produkta": "1"
-        },
-        {
-          "lot_produkt_id": "1776379666467",
-          "kolicina_uporabljenega_produkta": "5"
+          "lot_produkt_id": "1776633352067",
+          "kolicina_uporabljenega_produkta": "10"
         }
       ],
-      "id": 1776410384195,
-      "datum": "2026-04-17T07:19:44.195Z"
+      "id": 1776633654738,
+      "datum": "2026-04-19T21:20:54.738Z"
+    },
+    {
+      "status": "v pripravi",
+      "naziv_projekta": "redbf",
+      "opis": "ndtx",
+      "narocnik": {
+        "ime_narocnika": "nerdb",
+        "gsm_stevilka": "",
+        "email_narocnika": "ntd"
+      },
+      "slike": [],
+      "materiali": [
+        {
+          "lot_produkt_id": "1776633205018",
+          "kolicina_uporabljenega_produkta": "10"
+        }
+      ],
+      "id": 1776633783911,
+      "datum": "2026-04-19T21:23:03.911Z"
     }
   ],
   "delovne_naloge_avti": [
     {
-      "opravljena_storitev": "Polepitev kamiona",
+      "status": "v pripravi",
+      "opravljena_storitev": "brsb",
       "opis": "",
       "vozilo": {
-        "registrska_stevilka": "MB2012TG",
-        "stevilka_sasije": "12546987651651",
-        "znamka_vozila": "Marcedes"
+        "registrska_stevilka": "MB123ZG",
+        "stevilka_sasije": "85468534653",
+        "znamka_vozila": "Mercedes"
       },
       "lastnik_vozila": {
-        "ime_lastnika": "Filip K",
-        "email_lastnika": "1254898"
+        "ime_lastnika": "ves",
+        "email_lastnika": "vrsdy"
       },
       "slike": [],
       "materiali": [
         {
-          "lot_produkt_id": "1776379666467",
-          "kolicina_uporabljenega_produkta": "10"
-        },
+          "lot_produkt_id": "1776633205018",
+          "kolicina_uporabljenega_produkta": "0.9"
+        }
+      ],
+      "poskodba_vozila": [],
+      "id": 1776634166728,
+      "datum": "2026-04-19T21:29:26.728Z"
+    },
+    {
+      "status": "v pripravi",
+      "opravljena_storitev": "g4w5s",
+      "opis": "",
+      "vozilo": {
+        "registrska_stevilka": "ZG123MB",
+        "stevilka_sasije": "485468468354",
+        "znamka_vozila": "Mercedes"
+      },
+      "lastnik_vozila": {
+        "ime_lastnika": "brvs",
+        "email_lastnika": "rbd"
+      },
+      "slike": [],
+      "materiali": [
         {
-          "lot_produkt_id": "5",
+          "lot_produkt_id": "1776633205018",
           "kolicina_uporabljenega_produkta": "1"
         }
       ],
       "poskodba_vozila": [],
-      "id": 1776379760775,
-      "datum": "2026-04-16T22:49:20.775Z"
+      "id": 1776634200931,
+      "datum": "2026-04-19T21:30:00.931Z"
     },
     {
-      "opravljena_storitev": "bf",
+      "status": "v pripravi",
+      "opravljena_storitev": "oj",
       "opis": "",
       "vozilo": {
-        "registrska_stevilka": "rbs",
-        "stevilka_sasije": "15152",
-        "znamka_vozila": "brs"
+        "registrska_stevilka": "A1B",
+        "stevilka_sasije": "854683545",
+        "znamka_vozila": "oj"
       },
       "lastnik_vozila": {
-        "ime_lastnika": "bs",
-        "email_lastnika": "srb"
+        "ime_lastnika": "hjbenirk",
+        "email_lastnika": "grs"
       },
       "slike": [],
       "materiali": [
         {
-          "lot_produkt_id": "1776379864708",
-          "kolicina_uporabljenega_produkta": "1"
-        },
-        {
-          "lot_produkt_id": "1776379666467",
-          "kolicina_uporabljenega_produkta": "2"
+          "lot_produkt_id": "3",
+          "kolicina_uporabljenega_produkta": "50"
         }
       ],
-      "poskodba_vozila": [
-        "Poškodovano steklo"
-      ],
-      "id": 1776380318225
+      "poskodba_vozila": [],
+      "id": 1776635151977,
+      "datum": "2026-04-19T21:45:51.977Z"
     }
   ]
 }
