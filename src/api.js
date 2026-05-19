@@ -55,3 +55,15 @@ export async function updateNalogaPlakati(id, payload) {
 export async function updateNalogaAvti(id, payload) {
     return request(`/delovne_naloge_avti/${id}`, { method: "PUT", body: JSON.stringify(payload) });
 }
+
+export async function deleteNalogaPlakati(id) {
+    return request(`/delovne_naloge_plakati/${id}`, { method: "DELETE" });
+}
+
+export async function deleteNalogaAvti(id) {
+    return request(`/delovne_naloge_avti/${id}`, { method: "DELETE" });
+}
+
+export async function getOstaliNakupi() { return request("/ostali_nakupi?_sort=id&_order=desc"); }
+export async function addOstaliNakup(payload) { return request("/ostali_nakupi", { method: "POST", body: JSON.stringify(payload) }); }
+export async function potrdiLotProdukt(id, payload) { return request(`/lot_produkti/${id}/potrdi`, { method: "PUT", body: JSON.stringify(payload) }); }

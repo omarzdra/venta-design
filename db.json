@@ -1,303 +1,417 @@
 {
   "produkti": [
     {
-      "id": 1,
-      "koda": "FOL-001",
-      "naziv_produkta": "Oracal 651 White",
+      "koda": "ORC-345",
+      "naziv_produkta": "Oracal 345 Bela",
       "prodajna_cena": 15,
-      "nabavna_cena": 5,
-      "tip": "folija"
+      "nabavna_cena": 10,
+      "tip": "folija",
+      "id": 1
     },
     {
-      "id": 2,
-      "koda": "FOL-002",
-      "naziv_produkta": "Oracal 651 Black",
+      "koda": "ADR-876",
+      "naziv_produkta": "Nalepka za kamion",
       "prodajna_cena": 15,
-      "nabavna_cena": 5,
-      "tip": "folija"
-    },
-    {
-      "id": 3,
-      "koda": "ADR-001",
-      "naziv_produkta": "Montažno strgalo na palici",
-      "prodajna_cena": 25,
-      "nabavna_cena": 12,
-      "tip": "adr oprema"
-    },
-    {
-      "id": 4,
-      "koda": "CAR-001",
-      "naziv_produkta": "Car wrap matte grey",
-      "prodajna_cena": 30,
-      "nabavna_cena": 20,
-      "tip": "folija"
+      "nabavna_cena": 10,
+      "tip": "adr oprema",
+      "id": 2
     }
   ],
   "lot_produkti": [
     {
-      "id": 1,
       "produkt_id": 1,
-      "lot_stevilka": "LOT-WH-A1",
-      "kolicina_tm": 10,
-      "nabavna_cena": 5,
+      "lot_stevilka": "LOT-1",
+      "kolicina_tm": 40,
+      "nabavna_cena": 10,
       "prodajna_cena": 15,
-      "datum_prevzema": "2026-04-18T10:00:00.000Z"
+      "datum_prevzema": "2026-05-19T11:59:00.004Z",
+      "id": 1779191940004,
+      "potrjeno": true,
+      "dobavitelj": "Arteis",
+      "stevilka_racuna": "2026-9877456"
     },
     {
-      "id": 2,
-      "produkt_id": 1,
-      "lot_stevilka": "LOT-WH-A2",
+      "produkt_id": 2,
+      "lot_stevilka": "LOT-2",
       "kolicina_tm": 10,
-      "nabavna_cena": 6,
-      "prodajna_cena": 16,
-      "datum_prevzema": "2026-04-19T09:00:00.000Z"
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
+      "datum_prevzema": "2026-05-19T12:09:31.288Z",
+      "id": 1779192571288,
+      "potrjeno": true,
+      "dobavitelj": "Polis",
+      "stevilka_racuna": "2016-98765"
     },
     {
-      "produkt_id": 4,
-      "lot_stevilka": "123456789",
-      "kolicina_tm": 38.1,
-      "dobavitelj": "Mitja",
-      "stevilka_racuna": "123456789",
-      "nabavna_cena": 15,
-      "prodajna_cena": 30,
-      "datum_prevzema": "2026-04-19T21:13:25.018Z",
-      "id": 1776633205018
+      "produkt_id": 1,
+      "lot_stevilka": "LOT1223",
+      "kolicina_tm": 30,
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
+      "datum_prevzema": "2026-05-19T13:04:27.536Z",
+      "id": 1779195867536,
+      "potrjeno": false
     }
   ],
   "evidencija_zaloge": [
     {
-      "id": 1,
-      "datum": "2026-04-18T10:00:00.000Z",
-      "lot_produkt_id": 1,
-      "naziv_produkta": "Oracal 651 White",
+      "id": 1779191940004.5813,
+      "datum": "2026-05-19T11:59:00.004Z",
+      "lot_produkt_id": 1779191940004,
+      "naziv_produkta": "Oracal 345 Bela",
       "tip": "prevzem",
-      "stevilka_racuna": "INV-1001",
-      "nabavna_cena": 5,
+      "stevilka_racuna": "2026-9877456",
+      "nabavna_cena": 10,
       "popust": 0,
-      "dobavitelj": "FolijaX",
-      "kolicina_tm": 10
+      "dobavitelj": "Arteis",
+      "kolicina_tm": 100,
+      "znesek": 1000
     },
     {
-      "id": 2,
-      "datum": "2026-04-19T09:00:00.000Z",
-      "lot_produkt_id": 2,
-      "naziv_produkta": "Oracal 651 White",
-      "tip": "prevzem",
-      "stevilka_racuna": "INV-1002",
-      "nabavna_cena": 6,
-      "popust": 0,
-      "dobavitelj": "FolijaX",
-      "kolicina_tm": 10
-    },
-    {
-      "id": 3,
-      "datum": "2026-04-19T10:00:00.000Z",
-      "lot_produkt_id": 3,
-      "naziv_produkta": "Montažno strgalo na palici",
-      "tip": "prevzem",
-      "stevilka_racuna": "INV-1003",
-      "nabavna_cena": 12,
-      "popust": 0,
-      "dobavitelj": "ADR Center",
-      "kolicina_tm": 50
-    },
-    {
-      "id": 1776633205018.2515,
-      "datum": "2026-04-19T21:13:25.018Z",
-      "lot_produkt_id": 1776633205018,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "prevzem",
-      "stevilka_racuna": "123456789",
-      "nabavna_cena": 15,
-      "popust": 0,
-      "dobavitelj": "Mitja",
-      "kolicina_tm": 50
-    },
-    {
-      "id": 1776633352067.616,
-      "datum": "2026-04-19T21:15:52.067Z",
-      "lot_produkt_id": 1776633352067,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "prevzem",
-      "stevilka_racuna": "N/A",
-      "nabavna_cena": 20,
-      "popust": 0,
-      "dobavitelj": "Mitja",
-      "kolicina_tm": 10
-    },
-    {
-      "id": 1776633654742.5999,
-      "datum": "2026-04-19T21:20:54.739Z",
-      "lot_produkt_id": 1776633352067,
-      "naziv_produkta": "Car wrap matte grey",
+      "id": 1779192016165.7686,
+      "datum": "2026-05-19T12:00:16.163Z",
+      "lot_produkt_id": 1779191940004,
+      "naziv_produkta": "Oracal 345 Bela",
       "tip": "prodaja",
-      "stevilka_racuna": "DN-1776633654738",
-      "nabavna_cena": 20,
+      "stevilka_racuna": "DN-1779192016163",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
       "popust": 0,
       "dobavitelj": "Lastna poraba (Delovna Naloga)",
-      "kolicina_tm": 10
+      "kolicina_tm": 40,
+      "znesek": 600
     },
     {
-      "id": 1776633783913.4622,
-      "datum": "2026-04-19T21:23:03.911Z",
-      "lot_produkt_id": 1776633205018,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "prodaja",
-      "stevilka_racuna": "DN-1776633783911",
-      "nabavna_cena": 15,
+      "id": 1779192299130.7139,
+      "datum": "2026-05-19T12:04:59.127Z",
+      "lot_produkt_id": 1779191940004,
+      "naziv_produkta": "Oracal 345 Bela",
+      "tip": "storno",
+      "stevilka_racuna": "DN-1779192016163",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
       "popust": 0,
-      "dobavitelj": "Lastna poraba (Delovna Naloga)",
-      "kolicina_tm": 10
+      "dobavitelj": "Popravek/Storno Delovne Naloge",
+      "kolicina_tm": 40,
+      "znesek": 600
     },
     {
-      "id": 1776634166731.648,
-      "datum": "2026-04-19T21:29:26.728Z",
-      "lot_produkt_id": 1776633205018,
-      "naziv_produkta": "Car wrap matte grey",
+      "id": 1779192299134.1206,
+      "datum": "2026-05-19T12:04:59.132Z",
+      "lot_produkt_id": 1779191940004,
+      "naziv_produkta": "Oracal 345 Bela",
       "tip": "prodaja",
-      "stevilka_racuna": "DN-1776634166728",
-      "nabavna_cena": 15,
+      "stevilka_racuna": "",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
       "popust": 0,
       "dobavitelj": "Lastna poraba (Delovna Naloga)",
-      "kolicina_tm": 0.9
+      "kolicina_tm": 40,
+      "znesek": 600
     },
     {
-      "id": 1776634200936.258,
-      "datum": "2026-04-19T21:30:00.931Z",
-      "lot_produkt_id": 1776633205018,
-      "naziv_produkta": "Car wrap matte grey",
-      "tip": "prodaja",
-      "stevilka_racuna": "DN-1776634200931",
-      "nabavna_cena": 15,
+      "id": 1779192420967.6626,
+      "datum": "2026-05-19T12:07:00.965Z",
+      "lot_produkt_id": 1779191940004,
+      "naziv_produkta": "Oracal 345 Bela",
+      "tip": "storno",
+      "stevilka_racuna": "DN-1779192016163",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
       "popust": 0,
-      "dobavitelj": "Lastna poraba (Delovna Naloga)",
-      "kolicina_tm": 1
+      "dobavitelj": "Popravek/Storno Delovne Naloge",
+      "kolicina_tm": 40,
+      "znesek": 600
     },
     {
-      "id": 1776635151980.951,
-      "datum": "2026-04-19T21:45:51.977Z",
-      "lot_produkt_id": 3,
-      "naziv_produkta": "Montažno strgalo na palici",
+      "id": 1779192420970.1655,
+      "datum": "2026-05-19T12:07:00.969Z",
+      "lot_produkt_id": 1779191940004,
+      "naziv_produkta": "Oracal 345 Bela",
       "tip": "prodaja",
-      "stevilka_racuna": "DN-1776635151977",
-      "nabavna_cena": 12,
+      "stevilka_racuna": "",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
       "popust": 0,
       "dobavitelj": "Lastna poraba (Delovna Naloga)",
-      "kolicina_tm": 50
+      "kolicina_tm": 40,
+      "znesek": 600
+    },
+    {
+      "id": 1779192510390.0632,
+      "datum": "2026-05-19T12:08:30.388Z",
+      "lot_produkt_id": 1779191940004,
+      "naziv_produkta": "Oracal 345 Bela",
+      "tip": "storno",
+      "stevilka_racuna": "DN-1779192016163",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
+      "popust": 0,
+      "dobavitelj": "Popravek/Storno Delovne Naloge",
+      "kolicina_tm": 40,
+      "znesek": 600
+    },
+    {
+      "id": 1779192510393.4739,
+      "datum": "2026-05-19T12:08:30.392Z",
+      "lot_produkt_id": 1779191940004,
+      "naziv_produkta": "Oracal 345 Bela",
+      "tip": "prodaja",
+      "stevilka_racuna": "",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
+      "popust": 0,
+      "dobavitelj": "Lastna poraba (Delovna Naloga)",
+      "kolicina_tm": 40,
+      "znesek": 600
+    },
+    {
+      "id": 1779192514777.4663,
+      "datum": "2026-05-19T12:08:34.775Z",
+      "lot_produkt_id": 1779191940004,
+      "naziv_produkta": "Oracal 345 Bela",
+      "tip": "storno",
+      "stevilka_racuna": "DN-1779192016163",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
+      "popust": 0,
+      "dobavitelj": "Popravek/Storno Delovne Naloge",
+      "kolicina_tm": 40,
+      "znesek": 600
+    },
+    {
+      "id": 1779192514780.7397,
+      "datum": "2026-05-19T12:08:34.778Z",
+      "lot_produkt_id": 1779191940004,
+      "naziv_produkta": "Oracal 345 Bela",
+      "tip": "prodaja",
+      "stevilka_racuna": "DN-1779192016163",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
+      "popust": 0,
+      "dobavitelj": "Lastna poraba (Delovna Naloga)",
+      "kolicina_tm": 40,
+      "znesek": 600
+    },
+    {
+      "id": 1779192571288.2505,
+      "datum": "2026-05-19T12:09:31.288Z",
+      "lot_produkt_id": 1779192571288,
+      "naziv_produkta": "Nalepka za kamion",
+      "tip": "prevzem",
+      "stevilka_racuna": "2016-98765",
+      "nabavna_cena": 10,
+      "popust": 0,
+      "dobavitelj": "Polis",
+      "kolicina_tm": 24,
+      "znesek": 240
+    },
+    {
+      "id": 1779192670495.7341,
+      "datum": "2026-05-19T12:11:10.489Z",
+      "lot_produkt_id": 1779191940004,
+      "naziv_produkta": "Oracal 345 Bela",
+      "tip": "prodaja",
+      "stevilka_racuna": "DN-1779192670489",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
+      "popust": 0,
+      "dobavitelj": "Lastna poraba (Delovna Naloga)",
+      "kolicina_tm": 20,
+      "znesek": 300
+    },
+    {
+      "id": 1779192670498.678,
+      "datum": "2026-05-19T12:11:10.489Z",
+      "lot_produkt_id": 1779192571288,
+      "naziv_produkta": "Nalepka za kamion",
+      "tip": "prodaja",
+      "stevilka_racuna": "DN-1779192670489",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
+      "popust": 0,
+      "dobavitelj": "Lastna poraba (Delovna Naloga)",
+      "kolicina_tm": 4,
+      "znesek": 60
+    },
+    {
+      "id": 1779195867536.1978,
+      "datum": "2026-05-19T13:04:27.536Z",
+      "lot_produkt_id": 1779195867536,
+      "naziv_produkta": "Oracal 345 Bela",
+      "tip": "prevzem",
+      "stevilka_racuna": "",
+      "nabavna_cena": 10,
+      "popust": 0,
+      "dobavitelj": "",
+      "kolicina_tm": 40,
+      "znesek": 400
+    },
+    {
+      "id": 1779196302226.01,
+      "datum": "2026-05-19T13:11:42.222Z",
+      "lot_produkt_id": 1779195867536,
+      "naziv_produkta": "Oracal 345 Bela",
+      "tip": "prodaja",
+      "stevilka_racuna": "DN-1779196302222",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
+      "popust": 0,
+      "dobavitelj": "Lastna poraba (Delovna Naloga)",
+      "kolicina_tm": 10,
+      "znesek": 150
+    },
+    {
+      "id": 1779196486857.3591,
+      "datum": "2026-05-19T13:14:46.853Z",
+      "lot_produkt_id": 1779192571288,
+      "naziv_produkta": "Nalepka za kamion",
+      "tip": "prodaja",
+      "stevilka_racuna": "DN-1779196486853",
+      "nabavna_cena": 10,
+      "prodajna_cena": 15,
+      "popust": 0,
+      "dobavitelj": "Lastna poraba (Delovna Naloga)",
+      "kolicina_tm": 10,
+      "znesek": 150
     }
   ],
   "delovne_naloge_plakati": [
     {
-      "status": "v pripravi",
-      "naziv_projekta": "bf",
-      "opis": "ntd",
+      "status": "končana",
+      "naziv_projekta": "Polepitev plakata ",
+      "opis": "Moremo polepit nekaj na šoli",
+      "opomba": "/",
       "narocnik": {
-        "ime_narocnika": "ntd",
+        "ime_narocnika": "Tretja Gimnazija Maribor",
         "gsm_stevilka": "",
-        "email_narocnika": "ntd"
+        "email_narocnika": "tretja@tretja.si"
       },
       "slike": [],
       "materiali": [
         {
-          "lot_produkt_id": "1776633352067",
-          "kolicina_uporabljenega_produkta": "10"
+          "lot_produkt_id": "1779191940004",
+          "kolicina_uporabljenega_produkta": "40"
         }
       ],
-      "id": 1776633654738,
-      "datum": "2026-04-19T21:20:54.738Z"
+      "cena_dela": 500,
+      "cena_materiala": 600,
+      "datum": "2026-05-19T12:08:30.378Z",
+      "id": 1779192016163
     },
     {
       "status": "v pripravi",
-      "naziv_projekta": "redbf",
-      "opis": "ndtx",
+      "naziv_projekta": "irn",
+      "opis": "ivsrbk",
+      "opomba": "cjebd",
       "narocnik": {
-        "ime_narocnika": "nerdb",
+        "ime_narocnika": "oven",
         "gsm_stevilka": "",
-        "email_narocnika": "ntd"
+        "email_narocnika": "kev"
       },
       "slike": [],
       "materiali": [
         {
-          "lot_produkt_id": "1776633205018",
+          "lot_produkt_id": "1779195867536",
           "kolicina_uporabljenega_produkta": "10"
         }
       ],
-      "id": 1776633783911,
-      "datum": "2026-04-19T21:23:03.911Z"
+      "cena_dela": 400,
+      "cena_materiala": 150,
+      "datum": "2026-05-19T13:11:42.186Z",
+      "id": 1779196302222
+    },
+    {
+      "status": "v pripravi",
+      "naziv_projekta": "uzv",
+      "opis": "ug",
+      "opomba": "i",
+      "narocnik": {
+        "ime_narocnika": "ugb",
+        "gsm_stevilka": "",
+        "email_narocnika": "ib"
+      },
+      "slike": [],
+      "materiali": [
+        {
+          "lot_produkt_id": "1779192571288",
+          "kolicina_uporabljenega_produkta": "10"
+        }
+      ],
+      "cena_dela": 10,
+      "cena_materiala": 150,
+      "datum": "2026-05-19T13:14:46.823Z",
+      "id": 1779196486853
     }
   ],
   "delovne_naloge_avti": [
     {
       "status": "v pripravi",
-      "opravljena_storitev": "brsb",
+      "opravljena_storitev": "Full wrap kamiona",
       "opis": "",
+      "opomba": "/",
       "vozilo": {
-        "registrska_stevilka": "MB123ZG",
-        "stevilka_sasije": "85468534653",
-        "znamka_vozila": "Mercedes"
+        "registrska_stevilka": "ZG7636KK",
+        "stevilka_sasije": "01560165416531653153",
+        "znamka_vozila": "Toyota"
       },
       "lastnik_vozila": {
-        "ime_lastnika": "ves",
-        "email_lastnika": "vrsdy"
+        "ime_lastnika": "Omar",
+        "email_lastnika": "omar@gmail.com"
       },
       "slike": [],
       "materiali": [
         {
-          "lot_produkt_id": "1776633205018",
-          "kolicina_uporabljenega_produkta": "0.9"
+          "lot_produkt_id": "1779191940004",
+          "kolicina_uporabljenega_produkta": "20"
+        },
+        {
+          "lot_produkt_id": "1779192571288",
+          "kolicina_uporabljenega_produkta": "4"
         }
       ],
       "poskodba_vozila": [],
-      "id": 1776634166728,
-      "datum": "2026-04-19T21:29:26.728Z"
+      "cena_dela": 400,
+      "cena_materiala": 360,
+      "datum": "2026-05-19T12:11:10.480Z",
+      "id": 1779192670489
+    }
+  ],
+  "ostali_nakupi": [
+    {
+      "datum": "2026-05-16T11:22",
+      "opis": "Gorivo do tretje gimnazije",
+      "dobavitelj": "Petrol",
+      "podrobnosti": "Gorivo",
+      "znesek": 45,
+      "id": 1
     },
     {
-      "status": "v pripravi",
-      "opravljena_storitev": "g4w5s",
-      "opis": "",
-      "vozilo": {
-        "registrska_stevilka": "ZG123MB",
-        "stevilka_sasije": "485468468354",
-        "znamka_vozila": "Mercedes"
-      },
-      "lastnik_vozila": {
-        "ime_lastnika": "brvs",
-        "email_lastnika": "rbd"
-      },
-      "slike": [],
-      "materiali": [
-        {
-          "lot_produkt_id": "1776633205018",
-          "kolicina_uporabljenega_produkta": "1"
-        }
-      ],
-      "poskodba_vozila": [],
-      "id": 1776634200931,
-      "datum": "2026-04-19T21:30:00.931Z"
+      "datum": "2026-05-19T14:13",
+      "opis": "Voda za delavce",
+      "dobavitelj": "Špar",
+      "podrobnosti": "Drugo",
+      "znesek": 50,
+      "stevilka_racuna": "2026-98701456",
+      "id": 2
     },
     {
-      "status": "v pripravi",
-      "opravljena_storitev": "oj",
-      "opis": "",
-      "vozilo": {
-        "registrska_stevilka": "A1B",
-        "stevilka_sasije": "854683545",
-        "znamka_vozila": "oj"
-      },
-      "lastnik_vozila": {
-        "ime_lastnika": "hjbenirk",
-        "email_lastnika": "grs"
-      },
-      "slike": [],
-      "materiali": [
-        {
-          "lot_produkt_id": "3",
-          "kolicina_uporabljenega_produkta": "50"
-        }
-      ],
-      "poskodba_vozila": [],
-      "id": 1776635151977,
-      "datum": "2026-04-19T21:45:51.977Z"
+      "datum": "2026-04-08T14:18",
+      "opis": "ge",
+      "dobavitelj": "gw",
+      "podrobnosti": "Drugo",
+      "znesek": 40,
+      "stevilka_racuna": "15015",
+      "id": 3
+    },
+    {
+      "datum": "2026-05-18T15:08",
+      "opis": "Gorivo",
+      "dobavitelj": "Petrol",
+      "podrobnosti": "Gorivo",
+      "znesek": 22.3,
+      "stevilka_racuna": "102-25108",
+      "id": 4
     }
   ]
 }

@@ -49,7 +49,9 @@ router.render = (req, res) => {
 // Handlers for automatic logging
 const addEvidenca = (db, logData) => {
     const id = Date.now() + Math.random();
-    db.get("evidencija_zaloge").push({ id, ...logData }).write();
+    // Calculate znesek if not provided
+    const znesek = logData.znesek !== undefined ? logData.znesek : (Number(logData.kolicina_tm || 0) * Number(logData.nabavna_cena || 0));
+    db.get("evidencija_zaloge").push({ id, ...logData, znesek }).write();
 };
 
 const depleteMaterials = (db, materiali, reqBody, res) => {
@@ -59,45 +61,59 @@ const depleteMaterials = (db, materiali, reqBody, res) => {
     
     const now = new Date().toISOString();
     
+    // First pass: Validation
     for (const item of materiali) {
-        const lot = db.get("lot_produkti").find({ id: Number(item.lot_produkt_id) }).value();
+        const lotId = Number(item.lot_produkt_id);
+        const lot = db.get("lot_produkti").find(l => Number(l.id) === lotId).value();
+        
         if (!lot) {
             res.status(400).json({ message: `LOT produkt z ID ${item.lot_produkt_id} ne obstaja.` });
             return false;
         }
-        if (lot.kolicina_tm < Number(item.kolicina_uporabljenega_produkta)) {
+        
+        const qtyToUse = Number(item.kolicina_uporabljenega_produkta);
+        const currentQty = Number(lot.kolicina_tm || 0);
+        
+        if (currentQty < qtyToUse) {
             res.status(400).json({ 
-                message: `Premalo na zalogi za LOT ${lot.lot_stevilka} (na voljo: ${lot.kolicina_tm}, željeno: ${item.kolicina_uporabljenega_produkta}).` 
+                message: `Premalo na zalogi za LOT ${lot.lot_stevilka} (na voljo: ${currentQty}, željeno: ${qtyToUse}).` 
             });
             return false;
         }
     }
 
+    // Second pass: Update
     for (const item of materiali) {
-        const lot = db.get("lot_produkti").find({ id: Number(item.lot_produkt_id) }).value();
-        const produkt = db.get("produkti").find({ id: Number(lot.produkt_id) }).value();
+        const lotId = Number(item.lot_produkt_id);
+        const lot = db.get("lot_produkti").find(l => Number(l.id) === lotId).value();
+        const produkt = db.get("produkti").find(p => Number(p.id) === Number(lot.produkt_id)).value();
+        
         const qtyUsed = Number(item.kolicina_uporabljenega_produkta);
-        const newQty = lot.kolicina_tm - qtyUsed;
+        const currentQty = Number(lot.kolicina_tm || 0);
+        const newQty = currentQty - qtyUsed;
 
         if (newQty <= 0) {
-            db.get("lot_produkti").remove({ id: lot.id }).write();
+            db.get("lot_produkti").remove(l => Number(l.id) === lotId).write();
         } else {
             db.get("lot_produkti")
-                .find({ id: lot.id })
+                .find(l => Number(l.id) === lotId)
                 .assign({ kolicina_tm: newQty })
                 .write();
         }
 
+        const prodPrice = Number(lot.prodajna_cena || (produkt ? produkt.prodajna_cena : 0));
         addEvidenca(db, {
             datum: now,
-            lot_produkt_id: lot.id,
+            lot_produkt_id: lotId,
             naziv_produkta: produkt ? produkt.naziv_produkta : "Neznan",
             tip: "prodaja",
             stevilka_racuna: reqBody.id ? `DN-${reqBody.id}` : "", 
-            nabavna_cena: lot.nabavna_cena || (produkt ? produkt.nabavna_cena : 0),
+            nabavna_cena: Number(lot.nabavna_cena || (produkt ? produkt.nabavna_cena : 0)),
+            prodajna_cena: prodPrice,
             popust: 0,
             dobavitelj: "Lastna poraba (Delovna Naloga)",
-            kolicina_tm: qtyUsed
+            kolicina_tm: qtyUsed,
+            znesek: qtyUsed * prodPrice
         });
     }
 
@@ -131,17 +147,20 @@ server.post("/lot_produkti", (req, res, next) => {
     req.body.nabavna_cena = finalNabavna;
     req.body.prodajna_cena = finalProdajna;
     req.body.datum_prevzema = datum_prevzema || new Date().toISOString();
+    req.body.potrjeno = false;
 
+    // For prevzem, we use NABAVNA cena for the znesek (Expense)
     addEvidenca(db, {
         datum: req.body.datum_prevzema,
         lot_produkt_id: newLotId,
         naziv_produkta: produkt.naziv_produkta,
         tip: "prevzem",
-        stevilka_racuna: req.body.stevilka_racuna || "N/A", 
+        stevilka_racuna: "", 
         nabavna_cena: finalNabavna,
         popust: req.body.popust || 0,
-        dobavitelj: req.body.dobavitelj || "Splošni Dobavitelj",
-        kolicina_tm: Number(kolicina_tm)
+        dobavitelj: "",
+        kolicina_tm: Number(kolicina_tm),
+        znesek: Number(kolicina_tm) * finalNabavna
     });
 
     next();
@@ -173,35 +192,40 @@ server.post("/delovne_naloge_avti", (req, res, next) => {
     next();
 });
 const revertMaterials = (db, collectionName, reqId, reqBody) => {
-    const oldOrder = db.get(collectionName).find({ id: Number(reqId) }).value();
+    const oldOrder = db.get(collectionName).find(o => Number(o.id) === Number(reqId)).value();
     if (!oldOrder) return;
     
     const oldMats = oldOrder.materiali || [];
     const now = new Date().toISOString();
     
     for (const item of oldMats) {
-        const lot = db.get("lot_produkti").find({ id: Number(item.lot_produkt_id) }).value();
+        const lotId = Number(item.lot_produkt_id);
+        const lot = db.get("lot_produkti").find(l => Number(l.id) === lotId).value();
         if (!lot) continue;
-        const produkt = db.get("produkti").find({ id: Number(lot.produkt_id) }).value();
+        const produkt = db.get("produkti").find(p => Number(p.id) === Number(lot.produkt_id)).value();
         const qtyUsed = Number(item.kolicina_uporabljenega_produkta);
 
         // Revert quantity
+        const currentQty = Number(lot.kolicina_tm || 0);
         db.get("lot_produkti")
-            .find({ id: lot.id })
-            .assign({ kolicina_tm: lot.kolicina_tm + qtyUsed })
+            .find(l => Number(l.id) === lotId)
+            .assign({ kolicina_tm: currentQty + qtyUsed })
             .write();
 
-        // Storno record
+        // Storno record - use selling price as it reverts a sale
+        const prodPrice = Number(lot.prodajna_cena || (produkt ? produkt.prodajna_cena : 0));
         addEvidenca(db, {
             datum: now,
-            lot_produkt_id: lot.id,
+            lot_produkt_id: lotId,
             naziv_produkta: produkt ? produkt.naziv_produkta : "Neznan",
             tip: "storno",
             stevilka_racuna: oldOrder.id ? `DN-${oldOrder.id}` : "",
-            nabavna_cena: produkt ? produkt.nabavna_cena : 0,
+            nabavna_cena: Number(produkt ? produkt.nabavna_cena : 0),
+            prodajna_cena: prodPrice,
             popust: 0,
             dobavitelj: "Popravek/Storno Delovne Naloge",
-            kolicina_tm: qtyUsed
+            kolicina_tm: qtyUsed,
+            znesek: qtyUsed * prodPrice
         });
     }
 };
@@ -228,9 +252,41 @@ server.put("/delovne_naloge_avti/:id", (req, res, next) => {
     next();
 });
 
+server.put("/lot_produkti/:id/potrdi", (req, res) => {
+    const db = router.db;
+    const lotId = Number(req.params.id);
+    const { dobavitelj, stevilka_racuna } = req.body;
+
+    const lot = db.get("lot_produkti").find({ id: lotId }).value();
+    if (!lot) {
+        return res.status(404).json({ message: "LOT ne obstaja." });
+    }
+
+    // Update LOT
+    db.get("lot_produkti")
+        .find({ id: lotId })
+        .assign({ potrjeno: true, dobavitelj, stevilka_racuna })
+        .write();
+
+    // Update corresponding evidenca
+    const evidenca = db.get("evidencija_zaloge")
+        .find(e => Number(e.lot_produkt_id) === lotId && e.tip === "prevzem")
+        .value();
+
+    if (evidenca) {
+        db.get("evidencija_zaloge")
+            .find({ id: evidenca.id })
+            .assign({ dobavitelj, stevilka_racuna })
+            .write();
+    }
+
+    res.json({ message: "LOT uspešno potrjen.", potrjeno: true });
+});
+
 server.use(router);
 
-const PORT = process.env.PORT || 3001;
+const PORT = 3001;
 server.listen(PORT, () => {
-    console.log(`JSON server teče na http://localhost:${PORT}`);
+    console.log(`Venta Design CUSTOM Server is running on http://localhost:${PORT}`);
+    console.log(`Make sure your frontend API_URL is also set to port ${PORT}`);
 });
