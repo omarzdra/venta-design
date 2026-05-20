@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { addOstaliNakup, potrdiLotProdukt } from "../../api";
 
-function ProfitEvidencaView({ plakati, avti, evidenca, lots, ostaliNakupi, reload, onMsg }) {
+function ProfitEvidencaView({ profitData, reload, onMsg }) {
   const [activeTab, setActiveTab] = useState("nakupi");
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState("all");
@@ -12,14 +12,13 @@ function ProfitEvidencaView({ plakati, avti, evidenca, lots, ostaliNakupi, reloa
   const [confirmingLot, setConfirmingLot] = useState(null);
   const [confirmForm, setConfirmForm] = useState({ dobavitelj: "", stevilka_racuna: "" });
 
+  if (!profitData) return <div>Nalagam...</div>;
+  const { salesEvents, purchaseEvents, availableMonths } = profitData;
+
   const handleAddNakup = async (e) => {
       e.preventDefault();
       try {
-          await addOstaliNakup({
-              ...nakupForm,
-              datum: nakupForm.datum || new Date().toISOString(),
-              znesek: Number(nakupForm.znesek)
-          });
+          await addOstaliNakup(nakupForm);
           onMsg("Nakup uspešno dodan.");
           setNakupForm({ datum: "", opis: "", dobavitelj: "", podrobnosti: "Material", znesek: "", stevilka_racuna: "" });
           setShowAddNakup(false);
@@ -46,82 +45,12 @@ function ProfitEvidencaView({ plakati, avti, evidenca, lots, ostaliNakupi, reloa
       }
   };
 
-  // 1. Prodaja (Sales)
-  const salesEvents = useMemo(() => {
-      const revPlakati = plakati.map(n => ({
-          id: n.id,
-          datum: n.datum,
-          opis: n.naziv_projekta,
-          narocnik: n.narocnik?.ime_narocnika,
-          podrobnosti: `Delo: ${Number(n.cena_dela || 0).toFixed(2)} €, Material: ${Number(n.cena_materiala || 0).toFixed(2)} €`,
-          znesek: Number(n.cena_dela || 0) + Number(n.cena_materiala || 0)
-      }));
-      const revAvti = avti.map(n => ({
-          id: n.id,
-          datum: n.datum,
-          opis: `${n.opravljena_storitev || n.vozilo?.znamka_vozila}`,
-          narocnik: n.lastnik_vozila?.ime_lastnika,
-          podrobnosti: `Delo: ${Number(n.cena_dela || 0).toFixed(2)} €, Material: ${Number(n.cena_materiala || 0).toFixed(2)} €`,
-          znesek: Number(n.cena_dela || 0) + Number(n.cena_materiala || 0)
-      }));
-      return [...revPlakati, ...revAvti].sort((a, b) => new Date(b.datum || 0) - new Date(a.datum || 0));
-  }, [plakati, avti]);
+  const currentSales = filterMonth === "all" ? salesEvents : salesEvents.filter(e => e.datum && e.datum.startsWith(filterMonth));
+  const currentPurchases = filterMonth === "all" ? purchaseEvents : purchaseEvents.filter(e => e.datum && e.datum.startsWith(filterMonth));
 
-  // 2. Nakupi (Purchases)
-  const purchaseEvents = useMemo(() => {
-      const expEvidenca = evidenca.filter(log => log.tip === "prevzem").map(log => {
-          const lot = lots.find(l => Number(l.id) === Number(log.lot_produkt_id));
-          return {
-              id: log.id,
-              lot_id: log.lot_produkt_id,
-              isLot: true,
-              potrjeno: lot ? lot.potrjeno : true, // fallback if no lot found
-              datum: log.datum,
-              opis: log.naziv_produkta,
-              dobavitelj: lot?.dobavitelj || log.dobavitelj || "",
-              stevilka_racuna: lot?.stevilka_racuna || log.stevilka_racuna || "",
-              podrobnosti: "Material",
-              znesek: Number(log.znesek !== undefined ? log.znesek : (Number(log.kolicina_tm || 0) * Number(log.nabavna_cena || 0))),
-              lot_stevilka: lot ? lot.lot_stevilka : ""
-          };
-      });
-
-      const expOstali = ostaliNakupi.map(n => ({
-          id: n.id,
-          isLot: false,
-          potrjeno: true,
-          datum: n.datum,
-          opis: n.opis,
-          dobavitelj: n.dobavitelj,
-          stevilka_racuna: n.stevilka_racuna || "",
-          podrobnosti: n.podrobnosti,
-          znesek: Number(n.znesek || 0)
-      }));
-
-      return [...expEvidenca, ...expOstali].sort((a, b) => new Date(b.datum || 0) - new Date(a.datum || 0));
-  }, [evidenca, lots, ostaliNakupi]);
-
-  const availableMonths = useMemo(() => {
-      const allDates = [...salesEvents, ...purchaseEvents].map(e => e.datum).filter(Boolean);
-      const months = new Set(allDates.map(d => d.substring(0, 7))); // "YYYY-MM"
-      return Array.from(months).sort((a, b) => b.localeCompare(a));
-  }, [salesEvents, purchaseEvents]);
-
-  const currentSales = useMemo(() => {
-      if (filterMonth === "all") return salesEvents;
-      return salesEvents.filter(e => e.datum && e.datum.startsWith(filterMonth));
-  }, [salesEvents, filterMonth]);
-
-  const currentPurchases = useMemo(() => {
-      if (filterMonth === "all") return purchaseEvents;
-      return purchaseEvents.filter(e => e.datum && e.datum.startsWith(filterMonth));
-  }, [purchaseEvents, filterMonth]);
-
-  const stats = useMemo(() => {
-      const totalRevenue = currentSales.reduce((sum, item) => sum + item.znesek, 0);
-      const totalExpense = currentPurchases.reduce((sum, item) => sum + item.znesek, 0);
-      return { totalRevenue, totalExpense, netProfit: totalRevenue - totalExpense };
-  }, [currentSales, currentPurchases]);
+  const totalRevenue = currentSales.reduce((sum, item) => sum + item.znesek, 0);
+  const totalExpense = currentPurchases.reduce((sum, item) => sum + item.znesek, 0);
+  const netProfit = totalRevenue - totalExpense;
 
   const filteredSales = currentSales.filter(s => {
       if (!search) return true;
@@ -137,22 +66,21 @@ function ProfitEvidencaView({ plakati, avti, evidenca, lots, ostaliNakupi, reloa
 
   return (
     <div className="animated">
-      {/* STATISTIKA */}
       <section className="grid-2" style={{ marginBottom: "2rem" }}>
-        <div className="card" style={{ textAlign: "center", borderLeft: `8px solid ${stats.netProfit >= 0 ? "var(--success)" : "var(--danger)"}` }}>
+        <div className="card" style={{ textAlign: "center", borderLeft: `8px solid ${netProfit >= 0 ? "var(--success)" : "var(--danger)"}` }}>
            <h3 style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>RAZLIKA (Prihodki - Stroški)</h3>
-           <div style={{ fontSize: "2.5rem", fontWeight: "800", color: stats.netProfit >= 0 ? "var(--success)" : "var(--danger)" }}>
-                {stats.netProfit >= 0 ? "" : "-"}{Math.abs(stats.netProfit).toFixed(2)} €
+           <div style={{ fontSize: "2.5rem", fontWeight: "800", color: netProfit >= 0 ? "var(--success)" : "var(--danger)" }}>
+                {netProfit >= 0 ? "" : "-"}{Math.abs(netProfit).toFixed(2)} €
            </div>
         </div>
         <div className="grid-2" style={{ gap: "1rem" }}>
             <div className="card" style={{ textAlign: "center", padding: "1.5rem" }}>
                 <h3 style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>SKUPNI PRIHODKI</h3>
-                <div style={{ fontSize: "1.5rem", fontWeight: "700", color: "var(--success)" }}>{stats.totalRevenue.toFixed(2)} €</div>
+                <div style={{ fontSize: "1.5rem", fontWeight: "700", color: "var(--success)" }}>{totalRevenue.toFixed(2)} €</div>
             </div>
             <div className="card" style={{ textAlign: "center", padding: "1.5rem" }}>
                 <h3 style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>SKUPNI STROŠKI</h3>
-                <div style={{ fontSize: "1.5rem", fontWeight: "700", color: "var(--danger)" }}>{stats.totalExpense.toFixed(2)} €</div>
+                <div style={{ fontSize: "1.5rem", fontWeight: "700", color: "var(--danger)" }}>{totalExpense.toFixed(2)} €</div>
             </div>
         </div>
       </section>
@@ -309,7 +237,6 @@ function ProfitEvidencaView({ plakati, avti, evidenca, lots, ostaliNakupi, reloa
         )}
       </section>
 
-      {/* CONFIRM LOT MODAL */}
       {confirmingLot && (
         <div className="modal-overlay" onClick={() => setConfirmingLot(null)}>
             <div className="modal-content animated" onClick={e => e.stopPropagation()}>

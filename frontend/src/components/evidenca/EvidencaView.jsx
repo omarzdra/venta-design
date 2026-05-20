@@ -1,22 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 
-function EvidencaView({ evidenca, produkti, lots }) {
+function EvidencaView({ evidenca }) {
   const [filterType, setFilterType] = useState("vse");
   const [filterProdType, setFilterProdType] = useState("vse");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const enrichedEvidenca = useMemo(() => evidenca.map(log => {
-    const lot = lots.find(l => Number(l.id) === Number(log.lot_produkt_id));
-    const prod = lot ? produkti.find(p => Number(p.id) === Number(lot.produkt_id)) : null;
-
-    return {
-      ...log,
-      tip_produkta: prod ? prod.tip : "folija",
-      lot_stevilka: lot ? lot.lot_stevilka : log.lot_produkt_id
-    };
-  }), [evidenca, lots, produkti]);
-
-  const filtered = enrichedEvidenca.filter(log => {
+  const filtered = evidenca.filter(log => {
     if (filterType !== "vse" && log.tip !== filterType) return false;
     if (filterProdType !== "vse" && log.tip_produkta !== filterProdType) return false;
     if (searchQuery) {
@@ -71,11 +60,10 @@ function EvidencaView({ evidenca, produkti, lots }) {
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", paddingTop: "2rem" }}>Ni rezultatov.</td></tr>
+                <tr><td colSpan="4" style={{ textAlign: "center", color: "var(--text-muted)", paddingTop: "2rem" }}>Ni rezultatov.</td></tr>
               )}
               {filtered.map(log => {
                 const isRevenue = log.tip === "prodaja";
-                const amount = log.znesek || (log.kolicina_tm * (isRevenue ? 0 : log.nabavna_cena)); // Fallback if znesek missing
 
                 let badgeClass = "type-badge";
                 if (log.tip === "prevzem") badgeClass += " type-prevzem";
@@ -96,7 +84,7 @@ function EvidencaView({ evidenca, produkti, lots }) {
                     <td>{log.naziv_produkta} <br /><small style={{ color: "var(--text-muted)" }}>LOT: {log.lot_stevilka}</small></td>
                     <td style={{ textAlign: "right" }}>
                       <strong className={isRevenue ? "money-minus" : "money-plus"}>
-                        {isRevenue ? "" : ""}{log.kolicina_tm}{unitText}
+                        {log.kolicina_tm}{unitText}
                       </strong>
                     </td>
                   </tr>

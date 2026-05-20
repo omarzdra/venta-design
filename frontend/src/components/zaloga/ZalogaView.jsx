@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from "react";
-import { addProdukt, addLotProdukt, addEvidencaZaloge } from "../../api";
+import React, { useState } from "react";
+import { addProdukt, addLotProdukt } from "../../api";
 
-function ZalogaView({ produkti, lots, reload, onMsg }) {
+function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
   const [prodForm, setProdForm] = useState({ koda: "", naziv_produkta: "", prodajna_cena: "", nabavna_cena: "", tip: "folija" });
   const [lotForm, setLotForm] = useState({ produkt_id: "", lot_stevilka: "", kolicina_tm: "", nabavna_cena: "", prodajna_cena: "", datum_prevzema: "" });
   const [searchingLot, setSearchingLot] = useState("");
@@ -10,11 +10,7 @@ function ZalogaView({ produkti, lots, reload, onMsg }) {
   const handleAddProd = async (e) => {
     e.preventDefault();
     try {
-      await addProdukt({
-        ...prodForm,
-        prodajna_cena: Number(prodForm.prodajna_cena),
-        nabavna_cena: Number(prodForm.nabavna_cena)
-      });
+      await addProdukt(prodForm);
       onMsg("Produkt uspešno dodan.");
       setProdForm({ koda: "", naziv_produkta: "", prodajna_cena: "", nabavna_cena: "", tip: "folija" });
       reload();
@@ -50,30 +46,10 @@ function ZalogaView({ produkti, lots, reload, onMsg }) {
   };
 
   const searchStr = searchingLot.toLowerCase();
-  const searchedProdukti = useMemo(() => {
-    if (!searchStr) return produkti;
-    return produkti.filter(p => p.naziv_produkta.toLowerCase().includes(searchStr) || p.koda.toLowerCase().includes(searchStr));
-  }, [produkti, searchStr]);
+  const searchedProdukti = !searchStr ? produkti : produkti.filter(p => p.naziv_produkta.toLowerCase().includes(searchStr) || p.koda.toLowerCase().includes(searchStr));
 
   const activeSelectedProd = produkti.find(p => Number(p.id) === Number(lotForm.produkt_id));
   const isAdr = activeSelectedProd?.tip === "adr oprema";
-
-  const lotTotalsByProdId = useMemo(() => {
-    const totals = {};
-    lots.forEach(lot => {
-      const prodId = Number(lot.produkt_id);
-      if (!prodId) return;
-      if (!totals[prodId]) totals[prodId] = { kolicina: 0, vrednost: 0 };
-
-      const lotKolicina = Number(lot.kolicina_tm) || 0;
-      const prod = produkti.find(p => Number(p.id) === prodId);
-      const nabavna = Number(lot.nabavna_cena ?? prod?.nabavna_cena) || 0;
-
-      totals[prodId].kolicina += lotKolicina;
-      totals[prodId].vrednost += lotKolicina * nabavna;
-    });
-    return totals;
-  }, [lots, produkti]);
 
   return (
     <div className="grid-2 animated">
@@ -81,10 +57,10 @@ function ZalogaView({ produkti, lots, reload, onMsg }) {
         <section className="card">
           <h2>Katalog Produktov</h2>
           <div style={{ display: "grid", gap: "0.75rem", marginBottom: "2rem" }}>
-            {produkti.map(p => {
+            {zalogaData.map(p => {
               const isExpanded = expandedProdId === p.id;
-              const prodLots = lots.filter(l => Number(l.produkt_id) === Number(p.id));
-              const totals = lotTotalsByProdId[Number(p.id)] || { kolicina: 0, vrednost: 0 };
+              const prodLots = p.lotProdukti || [];
+              const totals = p.totals || { kolicina: 0, vrednost: 0 };
 
               return (
                 <div key={p.id} className="list-item" style={{ padding: "1rem", cursor: "pointer" }} onClick={() => setExpandedProdId(isExpanded ? null : p.id)}>

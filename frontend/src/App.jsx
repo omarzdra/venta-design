@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import {
+    getZaloga,
+    getEvidenca,
+    getProfit,
     getProdukti,
     getLotProdukti,
-    getEvidencaZaloge,
     getNalogePlakati,
-    getNalogeAvti,
-    getOstaliNakupi
+    getNalogeAvti
 } from "./api";
 import ZalogaView from "./components/zaloga/ZalogaView";
 import NalogeKreiranjeView from "./components/naloge/NalogeKreiranjeView";
@@ -26,25 +27,29 @@ function App() {
   const [evidenca, setEvidenca] = useState([]);
   const [plakati, setPlakati] = useState([]);
   const [avti, setAvti] = useState([]);
-  const [ostaliNakupi, setOstaliNakupi] = useState([]);
+  
+  const [zalogaData, setZalogaData] = useState([]);
+  const [profitData, setProfitData] = useState(null);
 
   async function loadData() {
     try {
       setLoading(true);
-      const [pd, ld, ed, ndp, nda, on] = await Promise.all([
+      const [zd, ed, profd, pd, ld, ndp, nda] = await Promise.all([
+        getZaloga(),
+        getEvidenca(),
+        getProfit(),
         getProdukti(),
         getLotProdukti(),
-        getEvidencaZaloge(),
         getNalogePlakati(),
-        getNalogeAvti(),
-        getOstaliNakupi()
+        getNalogeAvti()
       ]);
+      setZalogaData(zd);
+      setEvidenca(ed);
+      setProfitData(profd);
       setProdukti(pd);
       setLots(ld);
-      setEvidenca(ed);
       setPlakati(ndp);
       setAvti(nda);
-      setOstaliNakupi(on);
     } catch (err) {
       setError(err.message || "Napaka pri nalaganju podatkov.");
     } finally {
@@ -96,11 +101,11 @@ function App() {
       {success && <div className="alert success animated">{success}</div>}
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: "2rem" }}>Nalagam podatke...</div>
+        <div style={{ textAlign: "center", padding: "2rem" }}>Nalagam podatke iz Postgres Baze...</div>
       ) : (
         <main>
           {activeTab === "zaloga" && (
-            <ZalogaView produkti={produkti} lots={lots} reload={loadData} onMsg={displayMessage} />
+            <ZalogaView zalogaData={zalogaData} produkti={produkti} reload={loadData} onMsg={displayMessage} />
           )}
           {activeTab === "naloge" && (
             <NalogeKreiranjeView lots={lots} produkti={produkti} reload={loadData} onMsg={displayMessage} />
@@ -109,10 +114,10 @@ function App() {
             <NalogeEvidencaView lots={lots} produkti={produkti} plakati={plakati} avti={avti} reload={loadData} onMsg={displayMessage} />
           )}
           {activeTab === "evidenca" && (
-            <EvidencaView evidenca={evidenca} produkti={produkti} lots={lots} />
+            <EvidencaView evidenca={evidenca} />
           )}
           {activeTab === "evid_profit" && (
-            <ProfitEvidencaView plakati={plakati} avti={avti} evidenca={evidenca} lots={lots} ostaliNakupi={ostaliNakupi} reload={loadData} onMsg={displayMessage} />
+            <ProfitEvidencaView profitData={profitData} reload={loadData} onMsg={displayMessage} />
           )}
         </main>
       )}
