@@ -6,14 +6,16 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState("all");
 
-  const [nakupForm, setNakupForm] = useState({ datum: "", opis: "", dobavitelj: "", podrobnosti: "Material", znesek: "", stevilka_racuna: "" });
+    const [nakupForm, setNakupForm] = useState({ datum: "", datum_placila: "", opis: "", dobavitelj: "", podrobnosti: "Material", znesek: "", ddv_stopnja: 0, stevilka_racuna: "" });
   const [showAddNakup, setShowAddNakup] = useState(false);
 
-    const [prihodekForm, setPrihodekForm] = useState({ datum: "", opis: "", narocnik: "", znesek: "", stevilka_racuna: "" });
+        const [prihodekForm, setPrihodekForm] = useState({ datum: "", datum_placila: "", opis: "", narocnik: "", znesek: "", ddv_stopnja: 0, stevilka_racuna: "" });
     const [showAddPrihodek, setShowAddPrihodek] = useState(false);
 
     const [confirmingLot, setConfirmingLot] = useState(null);
-    const [confirmForm, setConfirmForm] = useState({ dobavitelj: "", stevilka_racuna: "", znesek: "", ddv_stopnja: 0 });
+        const [confirmForm, setConfirmForm] = useState({ dobavitelj: "", stevilka_racuna: "", znesek: "", ddv_stopnja: 0, datum_placila: "" });
+        const [viewingPurchase, setViewingPurchase] = useState(null);
+        const [viewingSale, setViewingSale] = useState(null);
 
   if (!profitData) return <div>Nalagam...</div>;
   const { salesEvents, purchaseEvents, availableMonths } = profitData;
@@ -23,7 +25,7 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
       try {
           await addOstaliNakup(nakupForm);
           onMsg("Nakup uspešno dodan.");
-          setNakupForm({ datum: "", opis: "", dobavitelj: "", podrobnosti: "Material", znesek: "", stevilka_racuna: "" });
+          setNakupForm({ datum: "", datum_placila: "", opis: "", dobavitelj: "", podrobnosti: "Material", znesek: "", ddv_stopnja: 0, stevilka_racuna: "" });
           setShowAddNakup(false);
           reload();
       } catch (err) {
@@ -36,7 +38,7 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
       try {
           await addPrihodek(prihodekForm);
           onMsg("Prihodek uspešno dodan.");
-          setPrihodekForm({ datum: "", opis: "", narocnik: "", znesek: "", stevilka_racuna: "" });
+          setPrihodekForm({ datum: "", datum_placila: "", opis: "", narocnik: "", znesek: "", ddv_stopnja: 0, stevilka_racuna: "" });
           setShowAddPrihodek(false);
           reload();
       } catch (err) {
@@ -50,7 +52,8 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
                 dobavitelj: purchase.dobavitelj || "",
                 stevilka_racuna: purchase.stevilka_racuna || "",
                 znesek: purchase.znesek || "",
-                ddv_stopnja: purchase.ddv_stopnja ?? 0
+                ddv_stopnja: purchase.ddv_stopnja ?? 0,
+                datum_placila: purchase.datum_placila ? new Date(purchase.datum_placila).toISOString().slice(0, 16) : ""
             });
   };
 
@@ -69,8 +72,8 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
   const currentSales = filterMonth === "all" ? salesEvents : salesEvents.filter(e => e.datum && e.datum.startsWith(filterMonth));
   const currentPurchases = filterMonth === "all" ? purchaseEvents : purchaseEvents.filter(e => e.datum && e.datum.startsWith(filterMonth));
 
-  const totalRevenue = currentSales.reduce((sum, item) => sum + item.znesek, 0);
-  const totalExpense = currentPurchases.reduce((sum, item) => sum + item.znesek, 0);
+    const totalRevenue = currentSales.reduce((sum, item) => sum + (item.znesek_z_ddv ?? item.znesek), 0);
+    const totalExpense = currentPurchases.reduce((sum, item) => sum + (item.znesek_z_ddv ?? item.znesek), 0);
   const netProfit = totalRevenue - totalExpense;
 
   const filteredSales = currentSales.filter(s => {
@@ -88,6 +91,12 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
     const confirmZnesek = Number(confirmForm.znesek || 0);
     const confirmDDV = Number(confirmForm.ddv_stopnja || 0);
     const confirmZnesekDDV = Number.isFinite(confirmZnesek) ? confirmZnesek * (1 + confirmDDV / 100) : 0;
+    const nakupZnesek = Number(nakupForm.znesek || 0);
+    const nakupDDV = Number(nakupForm.ddv_stopnja || 0);
+    const nakupZnesekDDV = Number.isFinite(nakupZnesek) ? nakupZnesek * (1 + nakupDDV / 100) : 0;
+    const prihodekZnesek = Number(prihodekForm.znesek || 0);
+    const prihodekDDV = Number(prihodekForm.ddv_stopnja || 0);
+    const prihodekZnesekDDV = Number.isFinite(prihodekZnesek) ? prihodekZnesek * (1 + prihodekDDV / 100) : 0;
 
   return (
     <div className="animated">
@@ -152,6 +161,24 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
                                 <input required type="number" step="0.01" value={nakupForm.znesek} onChange={e => setNakupForm({...nakupForm, znesek: e.target.value})} />
                             </div>
                         </div>
+                        <div className="grid-2" style={{ gap: "1rem" }}>
+                            <div className="form-group">
+                                <label>Datum plačila</label>
+                                <input type="datetime-local" value={nakupForm.datum_placila} onChange={e => setNakupForm({...nakupForm, datum_placila: e.target.value})} />
+                            </div>
+                            <div className="form-group">
+                                <label>DDV</label>
+                                <select value={nakupForm.ddv_stopnja} onChange={e => setNakupForm({...nakupForm, ddv_stopnja: e.target.value})}>
+                                    <option value={0}>0%</option>
+                                    <option value={9.5}>9.5%</option>
+                                    <option value={22}>22%</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label>Znesek z DDV</label>
+                            <input readOnly value={`${nakupZnesekDDV.toFixed(2)} €`} />
+                        </div>
                         <div className="form-group">
                             <label>Opis / Ime nakupa</label>
                             <input required value={nakupForm.opis} onChange={e => setNakupForm({...nakupForm, opis: e.target.value})} placeholder="Npr. Nakup orodja" />
@@ -195,13 +222,13 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
                     <tbody>
                     {filteredPurchases.length === 0 && <tr><td colSpan="6" style={{textAlign:"center"}}>Ni zapisov.</td></tr>}
                     {filteredPurchases.map(p => (
-                        <tr key={p.id}>
+                        <tr key={p.id} style={{ cursor: "pointer" }} onClick={() => setViewingPurchase(p)}>
                             <td style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{new Date(p.datum).toLocaleDateString()}</td>
                             <td><strong>{p.opis}</strong> {p.lot_stevilka && <small style={{display:"block", color:"var(--text-muted)"}}>LOT: {p.lot_stevilka}</small>}</td>
                             <td>{p.dobavitelj || "/"}<br/>{p.stevilka_racuna && <small style={{color:"var(--text-muted)"}}>Račun: {p.stevilka_racuna}</small>}</td>
                             <td>{p.podrobnosti}</td>
                             <td style={{ textAlign: "right", color: "var(--danger)", fontWeight: "bold" }}>
-                                {p.znesek.toFixed(2)} €
+                                {(p.znesek_z_ddv ?? p.znesek).toFixed(2)} €
                             </td>
                             <td style={{ textAlign: "center" }}>
                                 {p.isLot ? (
@@ -247,6 +274,24 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
                                 <input required type="number" step="0.01" value={prihodekForm.znesek} onChange={e => setPrihodekForm({...prihodekForm, znesek: e.target.value})} />
                             </div>
                         </div>
+                        <div className="grid-2" style={{ gap: "1rem" }}>
+                            <div className="form-group">
+                                <label>Datum plačila</label>
+                                <input type="datetime-local" value={prihodekForm.datum_placila} onChange={e => setPrihodekForm({...prihodekForm, datum_placila: e.target.value})} />
+                            </div>
+                            <div className="form-group">
+                                <label>DDV</label>
+                                <select value={prihodekForm.ddv_stopnja} onChange={e => setPrihodekForm({...prihodekForm, ddv_stopnja: e.target.value})}>
+                                    <option value={0}>0%</option>
+                                    <option value={9.5}>9.5%</option>
+                                    <option value={22}>22%</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label>Znesek z DDV</label>
+                            <input readOnly value={`${prihodekZnesekDDV.toFixed(2)} €`} />
+                        </div>
                         <div className="form-group">
                             <label>Opis</label>
                             <input required value={prihodekForm.opis} onChange={e => setPrihodekForm({...prihodekForm, opis: e.target.value})} placeholder="Npr. Dodatna storitev" />
@@ -278,13 +323,13 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
                     <tbody>
                     {filteredSales.length === 0 && <tr><td colSpan="5" style={{textAlign:"center"}}>Ni zapisov.</td></tr>}
                     {filteredSales.map(s => (
-                        <tr key={s.id}>
+                        <tr key={s.id} style={{ cursor: "pointer" }} onClick={() => setViewingSale(s)}>
                             <td style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{new Date(s.datum).toLocaleDateString()}</td>
                             <td><strong>{s.opis}</strong></td>
                             <td>{s.narocnik || "/"}</td>
                             <td style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{s.podrobnosti}</td>
                             <td style={{ textAlign: "right", color: "var(--success)", fontWeight: "bold" }}>
-                                {s.znesek.toFixed(2)} €
+                                {(s.znesek_z_ddv ?? s.znesek).toFixed(2)} €
                             </td>
                         </tr>
                     ))}
@@ -329,6 +374,10 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
                         <input readOnly value={`${confirmZnesekDDV.toFixed(2)} €`} />
                     </div>
                     <div className="form-group">
+                        <label>Datum plačila</label>
+                        <input type="datetime-local" value={confirmForm.datum_placila} onChange={e => setConfirmForm({...confirmForm, datum_placila: e.target.value})} />
+                    </div>
+                    <div className="form-group">
                         <label>Dobavitelj</label>
                         <input required value={confirmForm.dobavitelj} onChange={e => setConfirmForm({...confirmForm, dobavitelj: e.target.value})} placeholder="Npr. Antalis" />
                     </div>
@@ -338,6 +387,52 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
                     </div>
                     <button type="submit" className="btn-primary" style={{ background: "var(--success)" }}>Shrani in Potrdi</button>
                 </form>
+            </div>
+        </div>
+      )}
+
+      {viewingPurchase && (
+        <div className="modal-overlay" onClick={() => setViewingPurchase(null)}>
+            <div className="modal-content animated" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h2 style={{ margin: 0 }}>Podrobnosti stroška</h2>
+                    <button className="modal-close" onClick={() => setViewingPurchase(null)}>&times;</button>
+                </div>
+                <div style={{ marginBottom: "1.5rem" }}>
+                    <strong>Opis:</strong> {viewingPurchase.opis} <br />
+                    <strong>Datum:</strong> {new Date(viewingPurchase.datum).toLocaleString()} <br />
+                    <strong>Datum plačila:</strong> {viewingPurchase.datum_placila ? new Date(viewingPurchase.datum_placila).toLocaleString() : "/"} <br />
+                    <strong>Dobavitelj:</strong> {viewingPurchase.dobavitelj || "/"} <br />
+                    <strong>Račun:</strong> {viewingPurchase.stevilka_racuna || "/"}
+                </div>
+                <div style={{ background: "rgba(0,0,0,0.03)", padding: "1rem", borderRadius: "8px" }}>
+                    <strong>Neto:</strong> {viewingPurchase.znesek.toFixed(2)} € <br />
+                    <strong>DDV:</strong> {(viewingPurchase.ddv_stopnja ?? 0)}% <br />
+                    <strong>Bruto:</strong> {(viewingPurchase.znesek_z_ddv ?? viewingPurchase.znesek).toFixed(2)} €
+                </div>
+            </div>
+        </div>
+      )}
+
+      {viewingSale && (
+        <div className="modal-overlay" onClick={() => setViewingSale(null)}>
+            <div className="modal-content animated" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h2 style={{ margin: 0 }}>Podrobnosti prihodka</h2>
+                    <button className="modal-close" onClick={() => setViewingSale(null)}>&times;</button>
+                </div>
+                <div style={{ marginBottom: "1.5rem" }}>
+                    <strong>Opis:</strong> {viewingSale.opis} <br />
+                    <strong>Datum:</strong> {new Date(viewingSale.datum).toLocaleString()} <br />
+                    <strong>Datum plačila:</strong> {viewingSale.datum_placila ? new Date(viewingSale.datum_placila).toLocaleString() : "/"} <br />
+                    <strong>Naročnik:</strong> {viewingSale.narocnik || "/"} <br />
+                    <strong>Račun:</strong> {viewingSale.stevilka_racuna || "/"}
+                </div>
+                <div style={{ background: "rgba(0,0,0,0.03)", padding: "1rem", borderRadius: "8px" }}>
+                    <strong>Neto:</strong> {viewingSale.znesek.toFixed(2)} € <br />
+                    <strong>DDV:</strong> {(viewingSale.ddv_stopnja ?? 0)}% <br />
+                    <strong>Bruto:</strong> {(viewingSale.znesek_z_ddv ?? viewingSale.znesek).toFixed(2)} €
+                </div>
             </div>
         </div>
       )}

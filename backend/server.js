@@ -222,26 +222,38 @@ app.get('/api/profit', async (req, res) => {
       ...potrjenePlakati.map(n => ({
         id: n.id.toString(),
         datum: n.datum,
+        datum_placila: null,
         opis: n.naziv_projekta,
         narocnik: n.narocnik?.ime_narocnika,
         podrobnosti: `Delo: ${n.cena_dela.toFixed(2)} €, Material: ${n.cena_materiala.toFixed(2)} €`,
-        znesek: n.cena_dela + n.cena_materiala
+        znesek: n.cena_dela + n.cena_materiala,
+        znesek_z_ddv: null,
+        ddv_stopnja: null,
+        stevilka_racuna: null
       })),
       ...potrjeneAvti.map(n => ({
         id: n.id.toString(),
         datum: n.datum,
+        datum_placila: null,
         opis: `${n.opravljena_storitev || n.vozilo?.znamka_vozila}`,
         narocnik: n.lastnik_vozila?.ime_lastnika,
         podrobnosti: `Delo: ${n.cena_dela.toFixed(2)} €, Material: ${n.cena_materiala.toFixed(2)} €`,
-        znesek: n.cena_dela + n.cena_materiala
+        znesek: n.cena_dela + n.cena_materiala,
+        znesek_z_ddv: null,
+        ddv_stopnja: null,
+        stevilka_racuna: null
       })),
       ...prihodki.map(p => ({
         id: `prihodek_${p.id}`,
         datum: p.datum,
+        datum_placila: p.datum_placila,
         opis: p.opis,
         narocnik: p.narocnik || "",
         podrobnosti: p.stevilka_racuna ? `Račun: ${p.stevilka_racuna}` : "Ročni prihodek",
-        znesek: p.znesek
+        znesek: p.znesek,
+        znesek_z_ddv: p.znesek_z_ddv,
+        ddv_stopnja: p.ddv_stopnja,
+        stevilka_racuna: p.stevilka_racuna
       }))
     ].sort((a, b) => b.datum.getTime() - a.datum.getTime());
 
@@ -254,6 +266,7 @@ app.get('/api/profit', async (req, res) => {
           isLot: true,
           potrjeno: lot ? lot.potrjeno : true,
           datum: log.datum,
+          datum_placila: log.datum_placila,
           opis: log.naziv_produkta,
           dobavitelj: lot?.dobavitelj || log.dobavitelj || "",
           stevilka_racuna: lot?.stevilka_racuna || log.stevilka_racuna || "",
@@ -269,11 +282,14 @@ app.get('/api/profit', async (req, res) => {
         isLot: false,
         potrjeno: true,
         datum: n.datum,
+        datum_placila: n.datum_placila,
         opis: n.opis,
         dobavitelj: n.dobavitelj,
         stevilka_racuna: n.stevilka_racuna || "",
         podrobnosti: n.podrobnosti,
-        znesek: n.znesek
+        znesek: n.znesek,
+        ddv_stopnja: n.ddv_stopnja,
+        znesek_z_ddv: n.znesek_z_ddv
       }))
     ].sort((a, b) => b.datum.getTime() - a.datum.getTime());
 
@@ -288,13 +304,27 @@ app.get('/api/profit', async (req, res) => {
 
 app.post('/api/ostali_nakupi', async (req, res) => {
   try {
+    const ddvRate = req.body.ddv_stopnja === null || req.body.ddv_stopnja === undefined || req.body.ddv_stopnja === ""
+      ? null
+      : Number(req.body.ddv_stopnja);
+
+    if (ddvRate !== null && ![0, 9.5, 22].includes(ddvRate)) {
+      return res.status(400).json({ error: "DDV mora biti 0, 9.5 ali 22." });
+    }
+
+    const znesekNet = Number(req.body.znesek);
+    const znesekZDDV = ddvRate !== null ? znesekNet * (1 + ddvRate / 100) : null;
+
     const n = await prisma.ostaliNakup.create({
       data: {
         datum: req.body.datum ? new Date(req.body.datum) : new Date(),
+        datum_placila: req.body.datum_placila ? new Date(req.body.datum_placila) : null,
         opis: req.body.opis,
         dobavitelj: req.body.dobavitelj || "",
         podrobnosti: req.body.podrobnosti || "Material",
-        znesek: Number(req.body.znesek),
+        znesek: znesekNet,
+        ddv_stopnja: ddvRate,
+        znesek_z_ddv: znesekZDDV,
         stevilka_racuna: req.body.stevilka_racuna || null
       }
     });
@@ -304,12 +334,26 @@ app.post('/api/ostali_nakupi', async (req, res) => {
 
 app.post('/api/prihodki', async (req, res) => {
   try {
+    const ddvRate = req.body.ddv_stopnja === null || req.body.ddv_stopnja === undefined || req.body.ddv_stopnja === ""
+      ? null
+      : Number(req.body.ddv_stopnja);
+
+    if (ddvRate !== null && ![0, 9.5, 22].includes(ddvRate)) {
+      return res.status(400).json({ error: "DDV mora biti 0, 9.5 ali 22." });
+    }
+
+    const znesekNet = Number(req.body.znesek);
+    const znesekZDDV = ddvRate !== null ? znesekNet * (1 + ddvRate / 100) : null;
+
     const n = await prisma.prihodekManual.create({
       data: {
         datum: req.body.datum ? new Date(req.body.datum) : new Date(),
+        datum_placila: req.body.datum_placila ? new Date(req.body.datum_placila) : null,
         opis: req.body.opis,
         narocnik: req.body.narocnik || null,
-        znesek: Number(req.body.znesek),
+        znesek: znesekNet,
+        ddv_stopnja: ddvRate,
+        znesek_z_ddv: znesekZDDV,
         stevilka_racuna: req.body.stevilka_racuna || null
       }
     });
@@ -320,7 +364,7 @@ app.post('/api/prihodki', async (req, res) => {
 app.put('/api/lot_produkti/:id/potrdi', async (req, res) => {
   try {
     const lotId = BigInt(req.params.id);
-    const { dobavitelj, stevilka_racuna, znesek, ddv_stopnja } = req.body;
+    const { dobavitelj, stevilka_racuna, znesek, ddv_stopnja, datum_placila } = req.body;
 
     const ddvRate = ddv_stopnja === null || ddv_stopnja === undefined || ddv_stopnja === ""
       ? null
@@ -365,7 +409,8 @@ app.put('/api/lot_produkti/:id/potrdi', async (req, res) => {
           znesek: znesekNum !== null ? znesekNum : ev.znesek,
           nabavna_cena: nabavnaCenaNaEnoto !== null ? nabavnaCenaNaEnoto : ev.nabavna_cena,
           ddv_stopnja: ddvRate,
-          znesek_z_ddv: znesekZDDV
+          znesek_z_ddv: znesekZDDV,
+          datum_placila: datum_placila ? new Date(datum_placila) : ev.datum_placila
         }
       });
     }

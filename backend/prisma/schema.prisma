@@ -50,6 +50,7 @@ model EvidencaZaloge {
   znesek          Float
   ddv_stopnja     Float?
   znesek_z_ddv    Float?
+  datum_placila   DateTime?
 
   lotProdukt      LotProdukt @relation(fields: [lot_produkt_id], references: [id])
 }
@@ -159,18 +160,24 @@ model DelovnaNalogaAvtiPoskodba {
 model OstaliNakup {
   id              Int       @id @default(autoincrement())
   datum           DateTime
+  datum_placila   DateTime?
   opis            String
   dobavitelj      String
   podrobnosti     String
   znesek          Float
+  ddv_stopnja     Float?
+  znesek_z_ddv    Float?
   stevilka_racuna String?
 }
 
 model PrihodekManual {
   id              BigInt   @id @default(autoincrement())
   datum           DateTime
+  datum_placila   DateTime?
   opis            String
   narocnik        String?
   znesek          Float
+  ddv_stopnja     Float?
+  znesek_z_ddv    Float?
   stevilka_racuna String?
 }

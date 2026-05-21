@@ -38,7 +38,8 @@ CREATE TABLE evidenca_zaloge (
   kolicina_tm NUMERIC(12,2) NOT NULL,
   znesek NUMERIC(12,2) NOT NULL,
   ddv_stopnja NUMERIC(5,2),
-  znesek_z_ddv NUMERIC(12,2)
+  znesek_z_ddv NUMERIC(12,2),
+  datum_placila TIMESTAMPTZ
 );
 
 CREATE INDEX evidenca_zaloge_lot_id_idx ON evidenca_zaloge(lot_produkt_id);
@@ -127,18 +128,24 @@ CREATE TABLE delovna_naloga_avti_poskodba (
 CREATE TABLE ostali_nakup (
   id SERIAL PRIMARY KEY,
   datum TIMESTAMPTZ NOT NULL,
+  datum_placila TIMESTAMPTZ,
   opis TEXT NOT NULL,
   dobavitelj TEXT NOT NULL,
   podrobnosti TEXT NOT NULL,
   znesek NUMERIC(12,2) NOT NULL,
+  ddv_stopnja NUMERIC(5,2),
+  znesek_z_ddv NUMERIC(12,2),
   stevilka_racuna TEXT
 );
 
 CREATE TABLE prihodek_manual (
   id BIGSERIAL PRIMARY KEY,
   datum TIMESTAMPTZ NOT NULL,
+  datum_placila TIMESTAMPTZ,
   opis TEXT NOT NULL,
   narocnik TEXT,
   znesek NUMERIC(12,2) NOT NULL,
+  ddv_stopnja NUMERIC(5,2),
+  znesek_z_ddv NUMERIC(12,2),
   stevilka_racuna TEXT
 );
