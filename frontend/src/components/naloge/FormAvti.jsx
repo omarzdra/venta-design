@@ -8,7 +8,7 @@ const POSKODBE_V_AVTI = [
 ];
 
 function FormAvti({ lots, produkti, reload, onMsg, editOrder, clearEdit }) {
-  const defaults = { status: "v pripravi", opravljena_storitev: "", opis: "", tablica: "", sasija: "", znamka: "", ime_lastnika: "", email: "", slike: "", cena_dela: 0, opomba: "" };
+  const defaults = { status: "v izdelavi", opravljena_storitev: "", opis: "", tablica: "", sasija: "", znamka: "", ime_lastnika: "", email: "", slike: "", cena_dela: null, opomba: "" };
   const [form, setForm] = useState(defaults);
   const [mats, setMats] = useState([{ lot_produkt_id: "", kolicina_uporabljenega_produkta: "" }]);
   const [poskodbe, setPoskodbe] = useState({});
@@ -16,7 +16,7 @@ function FormAvti({ lots, produkti, reload, onMsg, editOrder, clearEdit }) {
   useEffect(() => {
     if (editOrder) {
       setForm({
-        status: editOrder.status || "v pripravi",
+        status: editOrder.status || "v izdelavi",
         opravljena_storitev: editOrder.opravljena_storitev || "",
         opis: editOrder.opis || "",
         tablica: editOrder.vozilo?.registrska_stevilka || "",
@@ -25,7 +25,7 @@ function FormAvti({ lots, produkti, reload, onMsg, editOrder, clearEdit }) {
         ime_lastnika: editOrder.lastnik_vozila?.ime_lastnika || "",
         email: editOrder.lastnik_vozila?.email_lastnika || "",
         slike: editOrder.slike?.[0] || "",
-        cena_dela: editOrder.cena_dela || 0,
+        cena_dela: editOrder.cena_dela ?? null,
         opomba: editOrder.opomba || ""
       });
       setMats(editOrder.materiali && editOrder.materiali.length > 0 ? editOrder.materiali : []);
@@ -50,8 +50,6 @@ function FormAvti({ lots, produkti, reload, onMsg, editOrder, clearEdit }) {
   };
 
   const matCost = calcMaterialCost();
-  const totalCost = matCost + Number(form.cena_dela || 0);
-
   const addMatRow = () => setMats([...mats, { lot_produkt_id: "", kolicina_uporabljenega_produkta: "" }]);
   const removeMatRow = (idx) => {
     const n = [...mats];
@@ -72,7 +70,7 @@ function FormAvti({ lots, produkti, reload, onMsg, editOrder, clearEdit }) {
         slike: form.slike ? [form.slike] : [],
         materiali: mats.filter(m => m.lot_produkt_id !== ""),
         poskodba_vozila: Object.keys(poskodbe).filter(k => poskodbe[k]),
-        cena_dela: Number(form.cena_dela),
+        cena_dela: form.cena_dela === null || form.cena_dela === undefined || form.cena_dela === "" ? null : Number(form.cena_dela),
         cena_materiala: matCost,
         datum: new Date().toISOString()
       };
@@ -112,26 +110,15 @@ function FormAvti({ lots, produkti, reload, onMsg, editOrder, clearEdit }) {
           <div className="form-group">
             <label>Status</label>
             <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-              <option value="v pripravi">V pripravi</option>
               <option value="v izdelavi">V izdelavi</option>
-              <option value="končana">Končana</option>
+              <option value="dokončana">Dokončana</option>
+              <option value="potrjena" disabled={!editOrder || editOrder.status !== "potrjena"}>Potrjena</option>
             </select>
           </div>
           <div className="form-group">
             <label>Opravljena Storitev</label>
             <input required value={form.opravljena_storitev} onChange={e => setForm({ ...form, opravljena_storitev: e.target.value })} placeholder="Npr. Full Wrap" />
           </div>
-        </div>
-
-        <div className="grid-2">
-           <div className="form-group">
-             <label>Cena dela (€)</label>
-             <input type="number" step="0.01" value={form.cena_dela} onChange={e => setForm({ ...form, cena_dela: e.target.value })} placeholder="0.00" />
-           </div>
-           <div className="form-group">
-              <label>Skupaj (Dobiček)</label>
-              <input readOnly value={`${totalCost.toFixed(2)} €`} style={{ fontWeight: "bold", background: "rgba(16, 185, 129, 0.1)", color: "var(--success)" }} />
-           </div>
         </div>
 
         <div className="grid-2" style={{ gap: "1rem" }}>

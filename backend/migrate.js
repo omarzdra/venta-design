@@ -78,7 +78,7 @@ async function main() {
         opis: n.opis || null,
         opomba: n.opomba || null,
         narocnik_id: narocnik.id,
-        cena_dela: Number(n.cena_dela),
+        cena_dela: n.cena_dela === null || n.cena_dela === undefined ? null : Number(n.cena_dela),
         cena_materiala: Number(n.cena_materiala),
         datum: new Date(n.datum)
       }
@@ -130,7 +130,7 @@ async function main() {
         opomba: n.opomba || null,
         vozilo_id: vozilo.id,
         lastnik_vozila_id: lastnik.id,
-        cena_dela: Number(n.cena_dela),
+        cena_dela: n.cena_dela === null || n.cena_dela === undefined ? null : Number(n.cena_dela),
         cena_materiala: Number(n.cena_materiala),
         datum: new Date(n.datum)
       }

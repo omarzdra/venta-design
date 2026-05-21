@@ -160,7 +160,9 @@ app.post('/api/lot_produkti', async (req, res) => {
         nabavna_cena: finalNabavna,
         prodajna_cena: null,
         kolicina_tm: Number(kolicina_tm),
-        znesek: Number(kolicina_tm) * finalNabavna
+        znesek: Number(kolicina_tm) * finalNabavna,
+        ddv_stopnja: null,
+        znesek_z_ddv: null
       }
     });
 
@@ -208,12 +210,16 @@ app.get('/api/profit', async (req, res) => {
     });
     const plakati = plakatiRaw.map(mapPlakatiRecord);
     const avti = avtiRaw.map(mapAvtiRecord);
+    const prihodki = await prisma.prihodekManual.findMany();
     const evidenca = await prisma.evidencaZaloge.findMany({ where: { tip: "prevzem" } });
     const lots = await prisma.lotProdukt.findMany();
     const ostaliNakupi = await prisma.ostaliNakup.findMany();
 
+    const potrjenePlakati = plakati.filter(n => n.status === "potrjena" && n.cena_dela !== null);
+    const potrjeneAvti = avti.filter(n => n.status === "potrjena" && n.cena_dela !== null);
+
     const salesEvents = [
-      ...plakati.map(n => ({
+      ...potrjenePlakati.map(n => ({
         id: n.id.toString(),
         datum: n.datum,
         opis: n.naziv_projekta,
@@ -221,13 +227,21 @@ app.get('/api/profit', async (req, res) => {
         podrobnosti: `Delo: ${n.cena_dela.toFixed(2)} €, Material: ${n.cena_materiala.toFixed(2)} €`,
         znesek: n.cena_dela + n.cena_materiala
       })),
-      ...avti.map(n => ({
+      ...potrjeneAvti.map(n => ({
         id: n.id.toString(),
         datum: n.datum,
         opis: `${n.opravljena_storitev || n.vozilo?.znamka_vozila}`,
         narocnik: n.lastnik_vozila?.ime_lastnika,
         podrobnosti: `Delo: ${n.cena_dela.toFixed(2)} €, Material: ${n.cena_materiala.toFixed(2)} €`,
         znesek: n.cena_dela + n.cena_materiala
+      })),
+      ...prihodki.map(p => ({
+        id: `prihodek_${p.id}`,
+        datum: p.datum,
+        opis: p.opis,
+        narocnik: p.narocnik || "",
+        podrobnosti: p.stevilka_racuna ? `Račun: ${p.stevilka_racuna}` : "Ročni prihodek",
+        znesek: p.znesek
       }))
     ].sort((a, b) => b.datum.getTime() - a.datum.getTime());
 
@@ -245,6 +259,8 @@ app.get('/api/profit', async (req, res) => {
           stevilka_racuna: lot?.stevilka_racuna || log.stevilka_racuna || "",
           podrobnosti: "Material",
           znesek: log.znesek !== null ? log.znesek : (log.kolicina_tm * log.nabavna_cena),
+          ddv_stopnja: log.ddv_stopnja ?? null,
+          znesek_z_ddv: log.znesek_z_ddv ?? null,
           lot_stevilka: lot ? lot.lot_stevilka : ""
         };
       }),
@@ -286,14 +302,54 @@ app.post('/api/ostali_nakupi', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.post('/api/prihodki', async (req, res) => {
+  try {
+    const n = await prisma.prihodekManual.create({
+      data: {
+        datum: req.body.datum ? new Date(req.body.datum) : new Date(),
+        opis: req.body.opis,
+        narocnik: req.body.narocnik || null,
+        znesek: Number(req.body.znesek),
+        stevilka_racuna: req.body.stevilka_racuna || null
+      }
+    });
+    res.json(n);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.put('/api/lot_produkti/:id/potrdi', async (req, res) => {
   try {
     const lotId = BigInt(req.params.id);
-    const { dobavitelj, stevilka_racuna } = req.body;
+    const { dobavitelj, stevilka_racuna, znesek, ddv_stopnja } = req.body;
+
+    const ddvRate = ddv_stopnja === null || ddv_stopnja === undefined || ddv_stopnja === ""
+      ? null
+      : Number(ddv_stopnja);
+
+    if (ddvRate !== null && ![0, 9.5, 22].includes(ddvRate)) {
+      return res.status(400).json({ message: "DDV mora biti 0, 9.5 ali 22." });
+    }
+
+    const lot = await prisma.lotProdukt.findUnique({ where: { id: lotId } });
+    if (!lot) return res.status(404).json({ message: "LOT ne obstaja." });
+
+    const znesekNum = znesek === null || znesek === undefined || znesek === "" ? null : Number(znesek);
+    const ddvMultiplier = ddvRate === null ? null : 1 + (ddvRate / 100);
+    const znesekZDDV = znesekNum !== null && ddvMultiplier !== null ? znesekNum * ddvMultiplier : null;
+
+    let nabavnaCenaNaEnoto = null;
+    if (znesekNum !== null && lot.kolicina_tm > 0) {
+      nabavnaCenaNaEnoto = znesekNum / Number(lot.kolicina_tm);
+    }
 
     await prisma.lotProdukt.update({
       where: { id: lotId },
-      data: { potrjeno: true, dobavitelj, stevilka_racuna }
+      data: {
+        potrjeno: true,
+        dobavitelj,
+        stevilka_racuna,
+        nabavna_cena: nabavnaCenaNaEnoto !== null ? nabavnaCenaNaEnoto : lot.nabavna_cena
+      }
     });
 
     const evidencaList = await prisma.evidencaZaloge.findMany({
@@ -303,7 +359,14 @@ app.put('/api/lot_produkti/:id/potrdi', async (req, res) => {
     for (const ev of evidencaList) {
       await prisma.evidencaZaloge.update({
         where: { id: ev.id },
-        data: { dobavitelj, stevilka_racuna }
+        data: {
+          dobavitelj,
+          stevilka_racuna,
+          znesek: znesekNum !== null ? znesekNum : ev.znesek,
+          nabavna_cena: nabavnaCenaNaEnoto !== null ? nabavnaCenaNaEnoto : ev.nabavna_cena,
+          ddv_stopnja: ddvRate,
+          znesek_z_ddv: znesekZDDV
+        }
       });
     }
 
@@ -396,6 +459,13 @@ app.post('/api/delovne_naloge_plakati', async (req, res) => {
   try {
     const id = BigInt(Date.now());
     await depleteMaterials(req.body.materiali, id);
+    const cenaDelaRaw = req.body.cena_dela;
+    const cenaDela = cenaDelaRaw === null || cenaDelaRaw === undefined || cenaDelaRaw === "" ? null : Number(cenaDelaRaw);
+    const status = req.body.status || "v izdelavi";
+    if (status === "potrjena" && (cenaDela === null || Number.isNaN(cenaDela))) {
+      return res.status(400).json({ error: "Za potrjeno nalogo je potrebna cena." });
+    }
+
     const narocnik = await prisma.narocnik.create({
       data: {
         ime_narocnika: req.body.narocnik?.ime_narocnika || "",
@@ -407,12 +477,12 @@ app.post('/api/delovne_naloge_plakati', async (req, res) => {
     await prisma.delovnaNalogaPlakati.create({
       data: {
         id,
-        status: req.body.status || "v pripravi",
+        status,
         naziv_projekta: req.body.naziv_projekta,
         opis: req.body.opis,
         opomba: req.body.opomba,
         narocnik_id: narocnik.id,
-        cena_dela: Number(req.body.cena_dela),
+        cena_dela: cenaDela,
         cena_materiala: Number(req.body.cena_materiala),
         datum: req.body.datum ? new Date(req.body.datum) : new Date()
       }
@@ -446,6 +516,13 @@ app.post('/api/delovne_naloge_avti', async (req, res) => {
   try {
     const id = BigInt(Date.now());
     await depleteMaterials(req.body.materiali, id);
+    const cenaDelaRaw = req.body.cena_dela;
+    const cenaDela = cenaDelaRaw === null || cenaDelaRaw === undefined || cenaDelaRaw === "" ? null : Number(cenaDelaRaw);
+    const status = req.body.status || "v izdelavi";
+    if (status === "potrjena" && (cenaDela === null || Number.isNaN(cenaDela))) {
+      return res.status(400).json({ error: "Za potrjeno nalogo je potrebna cena." });
+    }
+
     const vozilo = await prisma.vozilo.create({
       data: {
         registrska_stevilka: req.body.vozilo?.registrska_stevilka || null,
@@ -464,13 +541,13 @@ app.post('/api/delovne_naloge_avti', async (req, res) => {
     await prisma.delovnaNalogaAvti.create({
       data: {
         id,
-        status: req.body.status || "v pripravi",
+        status,
         opravljena_storitev: req.body.opravljena_storitev,
         opis: req.body.opis,
         opomba: req.body.opomba,
         vozilo_id: vozilo.id,
         lastnik_vozila_id: lastnik.id,
-        cena_dela: Number(req.body.cena_dela),
+        cena_dela: cenaDela,
         cena_materiala: Number(req.body.cena_materiala),
         datum: req.body.datum ? new Date(req.body.datum) : new Date()
       }
@@ -534,14 +611,21 @@ app.put('/api/delovne_naloge_plakati/:id', async (req, res) => {
       });
     }
 
+    const cenaDelaRaw = req.body.cena_dela;
+    const cenaDela = cenaDelaRaw === null || cenaDelaRaw === undefined || cenaDelaRaw === "" ? null : Number(cenaDelaRaw);
+    const status = req.body.status;
+    if (status === "potrjena" && (cenaDela === null || Number.isNaN(cenaDela))) {
+      return res.status(400).json({ error: "Za potrjeno nalogo je potrebna cena." });
+    }
+
     await prisma.delovnaNalogaPlakati.update({
       where: { id },
       data: {
-        status: req.body.status,
+        status,
         naziv_projekta: req.body.naziv_projekta,
         opis: req.body.opis,
         opomba: req.body.opomba,
-        cena_dela: Number(req.body.cena_dela),
+        cena_dela: cenaDela,
         cena_materiala: Number(req.body.cena_materiala)
       }
     });
@@ -611,14 +695,21 @@ app.put('/api/delovne_naloge_avti/:id', async (req, res) => {
       });
     }
 
+    const cenaDelaRaw = req.body.cena_dela;
+    const cenaDela = cenaDelaRaw === null || cenaDelaRaw === undefined || cenaDelaRaw === "" ? null : Number(cenaDelaRaw);
+    const status = req.body.status;
+    if (status === "potrjena" && (cenaDela === null || Number.isNaN(cenaDela))) {
+      return res.status(400).json({ error: "Za potrjeno nalogo je potrebna cena." });
+    }
+
     await prisma.delovnaNalogaAvti.update({
       where: { id },
       data: {
-        status: req.body.status,
+        status,
         opravljena_storitev: req.body.opravljena_storitev,
         opis: req.body.opis,
         opomba: req.body.opomba,
-        cena_dela: Number(req.body.cena_dela),
+        cena_dela: cenaDela,
         cena_materiala: Number(req.body.cena_materiala)
       }
     });

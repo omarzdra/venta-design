@@ -3,21 +3,21 @@ import { createNalogaPlakati, updateNalogaPlakati } from "../../api";
 import MaterialSelect from "./MaterialSelect";
 
 function FormPlakati({ lots, produkti, reload, onMsg, editOrder, clearEdit }) {
-  const defaults = { status: "v pripravi", naziv_projekta: "", opis: "", ime_narocnika: "", gsm: "", email: "", slike: "", cena_dela: 0, opomba: "" };
+  const defaults = { status: "v izdelavi", naziv_projekta: "", opis: "", ime_narocnika: "", gsm: "", email: "", slike: "", cena_dela: null, opomba: "" };
   const [form, setForm] = useState(defaults);
   const [mats, setMats] = useState([{ lot_produkt_id: "", kolicina_uporabljenega_produkta: "" }]);
 
   useEffect(() => {
     if (editOrder) {
       setForm({
-        status: editOrder.status || "v pripravi",
+        status: editOrder.status || "v izdelavi",
         naziv_projekta: editOrder.naziv_projekta || "",
         opis: editOrder.opis || "",
         ime_narocnika: editOrder.narocnik?.ime_narocnika || "",
         gsm: editOrder.narocnik?.gsm_stevilka || "",
         email: editOrder.narocnik?.email_narocnika || "",
         slike: editOrder.slike?.[0] || "",
-        cena_dela: editOrder.cena_dela || 0,
+        cena_dela: editOrder.cena_dela ?? null,
         opomba: editOrder.opomba || ""
       });
       setMats(editOrder.materiali && editOrder.materiali.length > 0 ? editOrder.materiali : []);
@@ -37,8 +37,6 @@ function FormPlakati({ lots, produkti, reload, onMsg, editOrder, clearEdit }) {
   };
 
   const matCost = calcMaterialCost();
-  const totalCost = matCost + Number(form.cena_dela || 0);
-
   const addMatRow = () => setMats([...mats, { lot_produkt_id: "", kolicina_uporabljenega_produkta: "" }]);
   const removeMatRow = (idx) => {
     const n = [...mats];
@@ -57,7 +55,7 @@ function FormPlakati({ lots, produkti, reload, onMsg, editOrder, clearEdit }) {
         narocnik: { ime_narocnika: form.ime_narocnika, gsm_stevilka: form.gsm, email_narocnika: form.email },
         slike: form.slike ? [form.slike] : [],
         materiali: mats.filter(m => m.lot_produkt_id !== ""),
-        cena_dela: Number(form.cena_dela),
+        cena_dela: form.cena_dela === null || form.cena_dela === undefined || form.cena_dela === "" ? null : Number(form.cena_dela),
         cena_materiala: matCost,
         datum: new Date().toISOString()
       };
@@ -97,9 +95,9 @@ function FormPlakati({ lots, produkti, reload, onMsg, editOrder, clearEdit }) {
           <div className="form-group">
             <label>Status</label>
             <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-              <option value="v pripravi">V pripravi</option>
               <option value="v izdelavi">V izdelavi</option>
-              <option value="končana">Končana</option>
+              <option value="dokončana">Dokončana</option>
+              <option value="potrjena" disabled={!editOrder || editOrder.status !== "potrjena"}>Potrjena</option>
             </select>
           </div>
           <div className="form-group">
@@ -111,17 +109,6 @@ function FormPlakati({ lots, produkti, reload, onMsg, editOrder, clearEdit }) {
         <div className="form-group">
           <label>Opis storitve</label>
           <textarea value={form.opis} onChange={e => setForm({ ...form, opis: e.target.value })} rows="2"></textarea>
-        </div>
-
-        <div className="grid-2">
-           <div className="form-group">
-             <label>Cena dela (€)</label>
-             <input type="number" step="0.01" value={form.cena_dela} onChange={e => setForm({ ...form, cena_dela: e.target.value })} placeholder="0.00" />
-           </div>
-           <div className="form-group">
-              <label>Skupaj (Dobiček)</label>
-              <input readOnly value={`${totalCost.toFixed(2)} €`} style={{ fontWeight: "bold", background: "rgba(16, 185, 129, 0.1)", color: "var(--success)" }} />
-           </div>
         </div>
 
         <div className="grid-2">

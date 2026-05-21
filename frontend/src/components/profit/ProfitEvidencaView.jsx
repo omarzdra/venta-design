@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { addOstaliNakup, potrdiLotProdukt } from "../../api";
+import { addOstaliNakup, addPrihodek, potrdiLotProdukt } from "../../api";
 
 function ProfitEvidencaView({ profitData, reload, onMsg }) {
   const [activeTab, setActiveTab] = useState("nakupi");
@@ -9,8 +9,11 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
   const [nakupForm, setNakupForm] = useState({ datum: "", opis: "", dobavitelj: "", podrobnosti: "Material", znesek: "", stevilka_racuna: "" });
   const [showAddNakup, setShowAddNakup] = useState(false);
 
-  const [confirmingLot, setConfirmingLot] = useState(null);
-  const [confirmForm, setConfirmForm] = useState({ dobavitelj: "", stevilka_racuna: "" });
+    const [prihodekForm, setPrihodekForm] = useState({ datum: "", opis: "", narocnik: "", znesek: "", stevilka_racuna: "" });
+    const [showAddPrihodek, setShowAddPrihodek] = useState(false);
+
+    const [confirmingLot, setConfirmingLot] = useState(null);
+    const [confirmForm, setConfirmForm] = useState({ dobavitelj: "", stevilka_racuna: "", znesek: "", ddv_stopnja: 0 });
 
   if (!profitData) return <div>Nalagam...</div>;
   const { salesEvents, purchaseEvents, availableMonths } = profitData;
@@ -28,9 +31,27 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
       }
   };
 
+  const handleAddPrihodek = async (e) => {
+      e.preventDefault();
+      try {
+          await addPrihodek(prihodekForm);
+          onMsg("Prihodek uspešno dodan.");
+          setPrihodekForm({ datum: "", opis: "", narocnik: "", znesek: "", stevilka_racuna: "" });
+          setShowAddPrihodek(false);
+          reload();
+      } catch (err) {
+          onMsg(err.message, true);
+      }
+  };
+
   const openConfirmLot = (purchase) => {
       setConfirmingLot(purchase);
-      setConfirmForm({ dobavitelj: purchase.dobavitelj || "", stevilka_racuna: purchase.stevilka_racuna || "" });
+            setConfirmForm({
+                dobavitelj: purchase.dobavitelj || "",
+                stevilka_racuna: purchase.stevilka_racuna || "",
+                znesek: purchase.znesek || "",
+                ddv_stopnja: purchase.ddv_stopnja ?? 0
+            });
   };
 
   const handleConfirmLot = async (e) => {
@@ -63,6 +84,10 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
       const term = search.toLowerCase();
       return (p.opis || "").toLowerCase().includes(term) || (p.dobavitelj || "").toLowerCase().includes(term) || (p.podrobnosti || "").toLowerCase().includes(term);
   });
+
+    const confirmZnesek = Number(confirmForm.znesek || 0);
+    const confirmDDV = Number(confirmForm.ddv_stopnja || 0);
+    const confirmZnesekDDV = Number.isFinite(confirmZnesek) ? confirmZnesek * (1 + confirmDDV / 100) : 0;
 
   return (
     <div className="animated">
@@ -203,9 +228,42 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
 
         {activeTab === "prodaja" && (
             <div>
-                <div style={{ marginBottom: "1rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                     <h2>Evidenca Prodaje</h2>
+                    <button className="btn-primary" onClick={() => setShowAddPrihodek(!showAddPrihodek)}>
+                        {showAddPrihodek ? "Prekliči" : "+ Dodaj Prihodek"}
+                    </button>
                 </div>
+
+                {showAddPrihodek && (
+                    <form onSubmit={handleAddPrihodek} style={{ background: "rgba(0,0,0,0.03)", padding: "1.5rem", borderRadius: "12px", marginBottom: "2rem" }}>
+                        <div className="grid-2" style={{ gap: "1rem" }}>
+                            <div className="form-group">
+                                <label>Datum</label>
+                                <input type="datetime-local" value={prihodekForm.datum} onChange={e => setPrihodekForm({...prihodekForm, datum: e.target.value})} />
+                            </div>
+                            <div className="form-group">
+                                <label>Znesek (€)</label>
+                                <input required type="number" step="0.01" value={prihodekForm.znesek} onChange={e => setPrihodekForm({...prihodekForm, znesek: e.target.value})} />
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label>Opis</label>
+                            <input required value={prihodekForm.opis} onChange={e => setPrihodekForm({...prihodekForm, opis: e.target.value})} placeholder="Npr. Dodatna storitev" />
+                        </div>
+                        <div className="grid-2" style={{ gap: "1rem" }}>
+                            <div className="form-group">
+                                <label>Naročnik</label>
+                                <input value={prihodekForm.narocnik} onChange={e => setPrihodekForm({...prihodekForm, narocnik: e.target.value})} placeholder="Npr. Podjetje d.o.o." />
+                            </div>
+                            <div className="form-group">
+                                <label>Številka računa</label>
+                                <input value={prihodekForm.stevilka_racuna} onChange={e => setPrihodekForm({...prihodekForm, stevilka_racuna: e.target.value})} placeholder="Npr. RAČ-123" />
+                            </div>
+                        </div>
+                        <button type="submit" className="btn-primary" style={{ background: "var(--success)" }}>Shrani Prihodek</button>
+                    </form>
+                )}
                 <div style={{ overflowX: "auto" }}>
                 <table>
                     <thead>
@@ -252,6 +310,24 @@ function ProfitEvidencaView({ profitData, reload, onMsg }) {
                 </div>
 
                 <form onSubmit={handleConfirmLot}>
+                    <div className="grid-2" style={{ gap: "1rem" }}>
+                        <div className="form-group">
+                            <label>Znesek (brez DDV)</label>
+                            <input required type="number" step="0.01" value={confirmForm.znesek} onChange={e => setConfirmForm({...confirmForm, znesek: e.target.value})} placeholder="Npr. 150.00" />
+                        </div>
+                        <div className="form-group">
+                            <label>DDV</label>
+                            <select value={confirmForm.ddv_stopnja} onChange={e => setConfirmForm({...confirmForm, ddv_stopnja: e.target.value})}>
+                                <option value={0}>0%</option>
+                                <option value={9.5}>9.5%</option>
+                                <option value={22}>22%</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>Znesek z DDV</label>
+                        <input readOnly value={`${confirmZnesekDDV.toFixed(2)} €`} />
+                    </div>
                     <div className="form-group">
                         <label>Dobavitelj</label>
                         <input required value={confirmForm.dobavitelj} onChange={e => setConfirmForm({...confirmForm, dobavitelj: e.target.value})} placeholder="Npr. Antalis" />

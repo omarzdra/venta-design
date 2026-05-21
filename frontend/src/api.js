@@ -38,4 +38,5 @@ export async function createNalogaAvti(payload) { return request("/api/delovne_n
 export async function updateNalogaPlakati(id, payload) { return request(`/api/delovne_naloge_plakati/${id}`, { method: "PUT", body: JSON.stringify(payload) }); }
 export async function updateNalogaAvti(id, payload) { return request(`/api/delovne_naloge_avti/${id}`, { method: "PUT", body: JSON.stringify(payload) }); }
 export async function addOstaliNakup(payload) { return request("/api/ostali_nakupi", { method: "POST", body: JSON.stringify(payload) }); }
+export async function addPrihodek(payload) { return request("/api/prihodki", { method: "POST", body: JSON.stringify(payload) }); }
 export async function potrdiLotProdukt(id, payload) { return request(`/api/lot_produkti/${id}/potrdi`, { method: "PUT", body: JSON.stringify(payload) }); }

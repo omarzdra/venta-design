@@ -36,7 +36,9 @@ CREATE TABLE evidenca_zaloge (
   popust NUMERIC(12,2) NOT NULL DEFAULT 0,
   dobavitelj TEXT,
   kolicina_tm NUMERIC(12,2) NOT NULL,
-  znesek NUMERIC(12,2) NOT NULL
+  znesek NUMERIC(12,2) NOT NULL,
+  ddv_stopnja NUMERIC(5,2),
+  znesek_z_ddv NUMERIC(12,2)
 );
 
 CREATE INDEX evidenca_zaloge_lot_id_idx ON evidenca_zaloge(lot_produkt_id);
@@ -55,7 +57,7 @@ CREATE TABLE delovna_naloga_plakati (
   opis TEXT,
   opomba TEXT,
   narocnik_id BIGINT NOT NULL REFERENCES narocnik(id) ON DELETE RESTRICT,
-  cena_dela NUMERIC(12,2) NOT NULL,
+  cena_dela NUMERIC(12,2),
   cena_materiala NUMERIC(12,2) NOT NULL,
   datum TIMESTAMPTZ NOT NULL
 );
@@ -96,7 +98,7 @@ CREATE TABLE delovna_naloga_avti (
   opomba TEXT,
   vozilo_id BIGINT NOT NULL REFERENCES vozilo(id) ON DELETE RESTRICT,
   lastnik_vozila_id BIGINT NOT NULL REFERENCES lastnik_vozila(id) ON DELETE RESTRICT,
-  cena_dela NUMERIC(12,2) NOT NULL,
+  cena_dela NUMERIC(12,2),
   cena_materiala NUMERIC(12,2) NOT NULL,
   datum TIMESTAMPTZ NOT NULL
 );
@@ -128,6 +130,15 @@ CREATE TABLE ostali_nakup (
   opis TEXT NOT NULL,
   dobavitelj TEXT NOT NULL,
   podrobnosti TEXT NOT NULL,
+  znesek NUMERIC(12,2) NOT NULL,
+  stevilka_racuna TEXT
+);
+
+CREATE TABLE prihodek_manual (
+  id BIGSERIAL PRIMARY KEY,
+  datum TIMESTAMPTZ NOT NULL,
+  opis TEXT NOT NULL,
+  narocnik TEXT,
   znesek NUMERIC(12,2) NOT NULL,
   stevilka_racuna TEXT
 );
