@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import { addProdukt, addLotProdukt } from "../../api";
+import { RoleContext } from "../../RoleContext";
 
 function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
-  const [prodForm, setProdForm] = useState({ koda: "", naziv_produkta: "", prodajna_cena: "", nabavna_cena: "", tip: "folija" });
-  const [lotForm, setLotForm] = useState({ produkt_id: "", lot_stevilka: "", kolicina_tm: "", nabavna_cena: "", prodajna_cena: "", datum_prevzema: "" });
+  const role = useContext(RoleContext);
+  const canEditZaloga = role !== "grega";
+  const [prodForm, setProdForm] = useState({ koda: "", naziv_produkta: "", prodajna_cena: "", nabavna_cena: "", tip: "folija", sirina: "", dobavitelj: "" });
+  const [lotForm, setLotForm] = useState({ produkt_id: "", lot_stevilka: "", kolicina_tm: "", kolicina_m2: "", nabavna_cena: "", prodajna_cena: "", datum_prevzema: "" });
+  const [lotUnit, setLotUnit] = useState("tm");
   const [searchingLot, setSearchingLot] = useState("");
   const [expandedProdId, setExpandedProdId] = useState(null);
 
@@ -12,7 +16,7 @@ function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
     try {
       await addProdukt(prodForm);
       onMsg("Produkt uspešno dodan.");
-      setProdForm({ koda: "", naziv_produkta: "", prodajna_cena: "", nabavna_cena: "", tip: "folija" });
+      setProdForm({ koda: "", naziv_produkta: "", prodajna_cena: "", nabavna_cena: "", tip: "folija", sirina: "", dobavitelj: "" });
       reload();
     } catch (err) {
       onMsg(err.message, true);
@@ -24,7 +28,7 @@ function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
     try {
       await addLotProdukt(lotForm);
       onMsg("LOT prevzem uspešen. Kreirana evidenca.");
-      setLotForm({ produkt_id: "", lot_stevilka: "", kolicina_tm: "", nabavna_cena: "", prodajna_cena: "", datum_prevzema: "" });
+      setLotForm({ produkt_id: "", lot_stevilka: "", kolicina_tm: "", kolicina_m2: "", nabavna_cena: "", prodajna_cena: "", datum_prevzema: "" });
       reload();
     } catch (err) {
       onMsg(err.message, true);
@@ -50,29 +54,48 @@ function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
 
   const activeSelectedProd = produkti.find(p => Number(p.id) === Number(lotForm.produkt_id));
   const isAdr = activeSelectedProd?.tip === "adr oprema";
+  const selectedSirina = activeSelectedProd?.sirina ? Number(activeSelectedProd.sirina) : null;
+
+  const totals = useMemo(() => {
+    return (zalogaData || []).reduce((acc, p) => {
+      const t = p.totals || { kolicina_tm: 0, kolicina_m2: 0, vrednost: 0 };
+      acc.tm += Number(t.kolicina_tm || 0);
+      acc.m2 += Number(t.kolicina_m2 || 0);
+      acc.vrednost += Number(t.vrednost || 0);
+      return acc;
+    }, { tm: 0, m2: 0, vrednost: 0 });
+  }, [zalogaData]);
 
   return (
     <div className="grid-2 animated">
       <div>
         <section className="card">
-          <h2>Katalog Produktov</h2>
+          <h2>Artikli</h2>
+          <div className="card" style={{ marginBottom: "1.5rem" }}>
+            <div style={{ display: "grid", gap: "0.5rem" }}>
+              <div><strong>Skupaj tekočih metrov v zalogi:</strong> {totals.tm.toFixed(2)} tm</div>
+              <div><strong>Skupaj kvadratnih metrov v zalogi:</strong> {totals.m2.toFixed(2)} m2</div>
+              <div><strong>Vrednost zaloge:</strong> {totals.vrednost.toFixed(2)} €</div>
+            </div>
+          </div>
           <div style={{ display: "grid", gap: "0.75rem", marginBottom: "2rem" }}>
             {zalogaData.map(p => {
               const isExpanded = expandedProdId === p.id;
               const prodLots = p.lotProdukti || [];
-              const totals = p.totals || { kolicina: 0, vrednost: 0 };
+              const totals = p.totals || { kolicina_tm: 0, kolicina_m2: 0, vrednost: 0 };
 
               return (
                 <div key={p.id} className="list-item" style={{ padding: "1rem", cursor: "pointer" }} onClick={() => setExpandedProdId(isExpanded ? null : p.id)}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                       <strong>{p.koda} - {p.naziv_produkta}</strong>
-                      <span style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Tip: {p.tip}</span>
+                      <span style={{ display: "block", fontSize: "0.8rem", color: "var(--color-text-muted)", textTransform: "uppercase" }}>Tip: {p.tip}</span>
+                      <span style={{ display: "block", fontSize: "0.8rem", color: "var(--color-text-muted)", textTransform: "uppercase" }}>Širina: {p.sirina ? `${p.sirina} m` : "-"}</span>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <strong>Skupaj: {totals.kolicina.toFixed(1)} {p.tip === "adr oprema" ? "kos" : "tm"}</strong>
-                      <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-main)", marginTop: "0.2rem" }}>Zaloga: {totals.vrednost.toFixed(2)} €</div>
-                      <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>{isExpanded ? "▲" : "▼"}</div>
+                      <strong>Skupaj: {totals.kolicina_tm.toFixed(2)} {p.tip === "adr oprema" ? "kos" : "tm"} | {totals.kolicina_m2.toFixed(2)} m2</strong>
+                      <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--color-text)", marginTop: "0.2rem" }}>Zaloga: {totals.vrednost.toFixed(2)} €</div>
+                      <div style={{ fontSize: "0.8rem", color: "var(--color-text-muted)", marginTop: "0.3rem" }}>{isExpanded ? "▲" : "▼"}</div>
                     </div>
                   </div>
 
@@ -83,7 +106,8 @@ function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
                           <thead>
                             <tr>
                               <th style={{ padding: "0.5rem" }}>LOT Številka</th>
-                              <th style={{ padding: "0.5rem" }}>Ostanek</th>
+                              <th style={{ padding: "0.5rem" }}>Ostanek (tm)</th>
+                              <th style={{ padding: "0.5rem" }}>Ostanek (m2)</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -91,6 +115,7 @@ function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
                               <tr key={l.id}>
                                 <td style={{ padding: "0.5rem" }}>{l.lot_stevilka}</td>
                                 <td style={{ padding: "0.5rem" }}>{l.kolicina_tm} {p.tip === "adr oprema" ? "kos" : "tm"}</td>
+                                <td style={{ padding: "0.5rem" }}>{l.kolicina_m2 ?? (p.sirina ? (l.kolicina_tm * p.sirina).toFixed(2) : "-")}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -103,8 +128,9 @@ function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
             })}
           </div>
 
-          <form onSubmit={handleAddProd}>
-            <h3 style={{ marginBottom: "1rem", fontSize: "1.25rem" }}>Dodaj nov produkt v bazo</h3>
+          {canEditZaloga && (
+            <form onSubmit={handleAddProd}>
+              <h3 style={{ marginBottom: "1rem", fontSize: "1.25rem" }}>Dodaj nov artikel</h3>
             <div className="grid-2" style={{ gap: "1rem" }}>
               <div className="form-group">
                 <label>Koda produkta</label>
@@ -124,23 +150,43 @@ function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
             </div>
             <div className="grid-2" style={{ gap: "1rem" }}>
               <div className="form-group">
-                <label>Izhodiščna nabavna cena (€/enota)</label>
+                <label>Širina materiala (m)</label>
+                <select value={prodForm.sirina} onChange={e => setProdForm({ ...prodForm, sirina: e.target.value })}>
+                  <option value="">Ni aplicabilno</option>
+                  <option value={0.6}>0.6</option>
+                  <option value={1.06}>1.06</option>
+                  <option value={1.23}>1.23</option>
+                  <option value={1.37}>1.37</option>
+                  <option value={1.523}>1.523</option>
+                  <option value={1.6}>1.6</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Dobavitelj</label>
+                <input value={prodForm.dobavitelj} onChange={e => setProdForm({ ...prodForm, dobavitelj: e.target.value })} placeholder="Npr. Antalis" />
+              </div>
+            </div>
+            <div className="grid-2" style={{ gap: "1rem" }}>
+              <div className="form-group">
+                <label>Izhodiščna nabavna cena (€/m2)</label>
                 <input type="number" step="0.01" required value={prodForm.nabavna_cena} onChange={e => setProdForm({ ...prodForm, nabavna_cena: e.target.value })} />
               </div>
               <div className="form-group">
-                <label>Izhodiščna prodajna cena (€/enota)</label>
+                <label>Izhodiščna prodajna cena (€/m2)</label>
                 <input type="number" step="0.01" required value={prodForm.prodajna_cena} onChange={e => setProdForm({ ...prodForm, prodajna_cena: e.target.value })} />
               </div>
             </div>
             <button type="submit" className="btn-primary">Ustvari produkt</button>
-          </form>
+            </form>
+          )}
         </section>
       </div>
 
       <div>
         <section className="card">
           <h2>LOT Prevzem (Vnos materiala na zalogo)</h2>
-          <form onSubmit={handleAddLot}>
+          {canEditZaloga ? (
+            <form onSubmit={handleAddLot}>
             <div className="form-group">
               <label>Išči in izberi produkt</label>
               <input
@@ -164,8 +210,8 @@ function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
             </div>
 
             {activeSelectedProd && (
-              <div style={{ padding: "1rem", background: "rgba(99, 102, 241, 0.05)", borderRadius: "12px", marginBottom: "1.5rem", border: "1px solid rgba(99, 102, 241, 0.2)" }}>
-                <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--accent-color)", fontWeight: 600 }}>Izbran: {activeSelectedProd.naziv_produkta}</p>
+                <div style={{ padding: "1rem", background: "rgba(224, 32, 32, 0.05)", borderRadius: "12px", marginBottom: "1.5rem", border: "1px solid rgba(224, 32, 32, 0.2)" }}>
+                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--color-primary)", fontWeight: 600 }}>Izbran: {activeSelectedProd.naziv_produkta}</p>
               </div>
             )}
 
@@ -175,10 +221,48 @@ function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
                 <input required value={lotForm.lot_stevilka} onChange={e => setLotForm({ ...lotForm, lot_stevilka: e.target.value })} placeholder="Npr. BATCH-A1" />
               </div>
               <div className="form-group">
-                <label>{isAdr ? "Količina izdelkov (Kosov)" : "Količina v tekočih metrih (TM)"}</label>
-                <input required type="number" step="0.1" value={lotForm.kolicina_tm} onChange={e => setLotForm({ ...lotForm, kolicina_tm: e.target.value })} placeholder="Npr. 50" />
+                  <label>Enota količine</label>
+                  <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.3rem" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                      <input type="radio" name="lotUnit" checked={lotUnit === "tm"} onChange={() => setLotUnit("tm")} />
+                      Tekoči metri (tm)
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                      <input type="radio" name="lotUnit" checked={lotUnit === "m2"} onChange={() => setLotUnit("m2")} disabled={!selectedSirina || isAdr} />
+                      Kvadratni metri (m2)
+                    </label>
+                  </div>
               </div>
             </div>
+
+              <div className="grid-2" style={{ gap: "1rem" }}>
+                <div className="form-group">
+                  <label>{isAdr ? "Količina izdelkov (Kosov)" : "Količina"} ({lotUnit})</label>
+                  <input
+                    required
+                    type="number"
+                    step="0.1"
+                    value={lotUnit === "tm" ? lotForm.kolicina_tm : lotForm.kolicina_m2}
+                    onChange={e => setLotForm({
+                      ...lotForm,
+                      kolicina_tm: lotUnit === "tm" ? e.target.value : lotForm.kolicina_tm,
+                      kolicina_m2: lotUnit === "m2" ? e.target.value : lotForm.kolicina_m2
+                    })}
+                    placeholder="Npr. 50"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Preračun</label>
+                  <input
+                    readOnly
+                    value={
+                      lotUnit === "tm"
+                        ? (selectedSirina ? `${(Number(lotForm.kolicina_tm || 0) * selectedSirina).toFixed(2)} m2` : "-")
+                        : (selectedSirina ? `${(Number(lotForm.kolicina_m2 || 0) / selectedSirina).toFixed(2)} tm` : "-")
+                    }
+                  />
+                </div>
+              </div>
 
             <div className="grid-2" style={{ gap: "1rem" }}>
               <div className="form-group">
@@ -197,7 +281,10 @@ function ZalogaView({ zalogaData, produkti, reload, onMsg }) {
               <small style={{ display: "block", color: "var(--text-muted)", marginTop: "0.25rem" }}>Pusti prazno za ZDAJ</small>
             </div>
             <button type="submit" className="btn-primary">Sprejmi in kreiraj prevzem</button>
-          </form>
+            </form>
+          ) : (
+            <p style={{ color: "var(--color-text-muted)" }}>Za urejanje zaloge nimaš dovoljenja.</p>
+          )}
         </section>
       </div>
     </div>

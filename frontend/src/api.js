@@ -21,8 +21,12 @@ async function request(path, options = {}) {
 
 // Nove backend rute, ki vračajo že strukturirane in preračunane podatke
 export async function getZaloga() { return request("/api/zaloga"); }
-export async function getEvidenca() { return request("/api/evidenca"); }
-export async function getProfit() { return request("/api/profit"); }
+export async function getProfit(params) {
+    const query = params ? new URLSearchParams(params).toString() : "";
+    const suffix = query ? `?${query}` : "";
+    return request(`/api/profit${suffix}`);
+}
+export async function getNakupi() { return request("/api/nakupi"); }
 
 // Stare rute (očiščene _sort in _order, saj backend zdaj sam sortira)
 export async function getProdukti() { return request("/api/produkti"); }
@@ -39,4 +43,5 @@ export async function updateNalogaPlakati(id, payload) { return request(`/api/de
 export async function updateNalogaAvti(id, payload) { return request(`/api/delovne_naloge_avti/${id}`, { method: "PUT", body: JSON.stringify(payload) }); }
 export async function addOstaliNakup(payload) { return request("/api/ostali_nakupi", { method: "POST", body: JSON.stringify(payload) }); }
 export async function addPrihodek(payload) { return request("/api/prihodki", { method: "POST", body: JSON.stringify(payload) }); }
+export async function addNakup(payload) { return request("/api/nakupi", { method: "POST", body: JSON.stringify(payload) }); }
 export async function potrdiLotProdukt(id, payload) { return request(`/api/lot_produkti/${id}/potrdi`, { method: "PUT", body: JSON.stringify(payload) }); }

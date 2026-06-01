@@ -1,27 +1,60 @@
-import React, { useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import FormPlakati from "./FormPlakati";
 import FormAvti from "./FormAvti";
 import { updateNalogaPlakati, updateNalogaAvti } from "../../api";
+import { RoleContext } from "../../RoleContext";
 
 function NalogeEvidencaView({ lots, produkti, plakati, avti, reload, onMsg }) {
+  const role = useContext(RoleContext);
+  const canManageFinance = role === "admin";
   const [nalogaType, setNalogaType] = useState("plakati");
   const [editingOrder, setEditingOrder] = useState(null);
   const [viewingDetails, setViewingDetails] = useState(null);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("vsi");
+  const [datumOd, setDatumOd] = useState("");
+  const [datumDo, setDatumDo] = useState("");
   const [confirmCena, setConfirmCena] = useState("");
+  const canConfirm = useMemo(() => {
+    if (!viewingDetails) return false;
+    const hasCena = confirmCena !== "" && !Number.isNaN(Number(confirmCena));
+    const hasDN = !!viewingDetails.stevilka_delovnega_naloga;
+
+    if (nalogaType === "plakati") {
+      const hasNaziv = !!viewingDetails.naziv_projekta;
+      const hasNarocnik = !!viewingDetails.narocnik?.ime_narocnika;
+      return hasCena && hasDN && hasNaziv && hasNarocnik;
+    }
+
+    const hasStoritev = !!viewingDetails.opravljena_storitev;
+    const hasRegOrSasija = !!viewingDetails.vozilo?.registrska_stevilka || !!viewingDetails.vozilo?.stevilka_sasije;
+    const hasLastnik = !!viewingDetails.lastnik_vozila?.ime_lastnika;
+    return hasCena && hasDN && hasStoritev && hasRegOrSasija && hasLastnik;
+  }, [viewingDetails, confirmCena, nalogaType]);
 
   const activeList = nalogaType === "plakati" ? plakati : avti;
 
-  const filteredList = activeList.filter(n => {
-    if (!search) return true;
+  const filteredList = useMemo(() => activeList.filter(n => {
     const srt = search.toLowerCase();
     const primary = (n.naziv_projekta || n.opravljena_storitev || "").toLowerCase();
-    const stat = (n.status || "").toLowerCase();
     const tablica = (n.vozilo?.registrska_stevilka || "").toLowerCase();
     const sasija = (n.vozilo?.stevilka_sasije || "").toLowerCase();
+    const narocnik = (n.narocnik?.ime_narocnika || n.lastnik_vozila?.ime_lastnika || "").toLowerCase();
 
-    return primary.includes(srt) || stat.includes(srt) || tablica.includes(srt) || sasija.includes(srt);
-  });
+    if (search && !(primary.includes(srt) || tablica.includes(srt) || sasija.includes(srt) || narocnik.includes(srt))) {
+      return false;
+    }
+    if (statusFilter !== "vsi" && (n.status || "") !== statusFilter) {
+      return false;
+    }
+    if (datumOd && new Date(n.datum) < new Date(datumOd)) {
+      return false;
+    }
+    if (datumDo && new Date(n.datum) > new Date(datumDo)) {
+      return false;
+    }
+    return true;
+  }), [activeList, search, statusFilter, datumOd, datumDo]);
 
   const startEdit = (order) => {
     setEditingOrder(order);
@@ -84,7 +117,34 @@ function NalogeEvidencaView({ lots, produkti, plakati, avti, reload, onMsg }) {
           <section className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h2 style={{ margin: 0 }}>Zgodovina Nalog</h2>
-              <input type="text" placeholder="Išči po imenu, statusu, tablici ali šasiji..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "300px", padding: "0.4rem 0.8rem" }} />
+              <input type="text" placeholder="Išči po registraciji, šasiji, naročniku ali imenu..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "300px", padding: "0.4rem 0.8rem" }} />
+            </div>
+
+            <div className="grid-2" style={{ gap: "1rem", marginTop: "1rem" }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Status</label>
+                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                  <option value="vsi">Vsi</option>
+                  <option value="v izdelavi">V izdelavi</option>
+                  <option value="dokončana">Dokončana</option>
+                  <option value="potrjena">Potrjena</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Datum od</label>
+                <input type="date" value={datumOd} onChange={e => setDatumOd(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid-2" style={{ gap: "1rem", marginTop: "1rem" }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Datum do</label>
+                <input type="date" value={datumDo} onChange={e => setDatumDo(e.target.value)} />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0, display: "flex", alignItems: "flex-end" }}>
+                <button type="button" className="btn-primary" style={{ width: "auto" }} onClick={() => { setSearch(""); setStatusFilter("vsi"); setDatumOd(""); setDatumDo(""); }}>
+                  Počisti filtre
+                </button>
+              </div>
             </div>
 
             <div style={{ display: "grid", gap: "1rem", marginTop: "1rem" }}>
@@ -190,7 +250,7 @@ function NalogeEvidencaView({ lots, produkti, plakati, avti, reload, onMsg }) {
               </ul>
             </div>
 
-            {viewingDetails.status !== "potrjena" && (
+            {canManageFinance && viewingDetails.status !== "potrjena" && (
               <div style={{ marginTop: "1.5rem", background: "rgba(0,0,0,0.03)", padding: "1rem", borderRadius: "12px" }}>
                 <h3>Potrditev s ceno</h3>
                 <div className="grid-2" style={{ gap: "1rem" }}>
@@ -209,7 +269,7 @@ function NalogeEvidencaView({ lots, produkti, plakati, avti, reload, onMsg }) {
                       Označi dokončano
                     </button>
                   )}
-                  <button className="btn-primary" style={{ background: "var(--success)", width: "auto" }} onClick={handlePotrdi}>
+                  <button className="btn-primary" style={{ background: "var(--success)", width: "auto" }} onClick={handlePotrdi} disabled={!canConfirm}>
                     ✓ Potrdi s ceno
                   </button>
                 </div>
@@ -219,7 +279,7 @@ function NalogeEvidencaView({ lots, produkti, plakati, avti, reload, onMsg }) {
             <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "flex-end", gap: "1rem" }}>
               <button className="btn-primary" style={{ background: "#f59e0b", width: "auto" }} onClick={() => {
                 startEdit(viewingDetails);
-              }}>Uredi to Nalogo v Sidebar-u</button>
+              }}>Uredi</button>
             </div>
           </div>
         </div>

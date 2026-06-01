@@ -9,10 +9,10 @@ function NalogeKreiranjeView({ lots, produkti, reload, onMsg }) {
     <div className="animated">
       <div className="big-toggle">
         <button className={`big-btn ${nalogaType === "plakati" ? "active" : ""}`} onClick={() => setNalogaType("plakati")}>
-          🖼️ Nova Naloga: PLAKATI / NALEPKE
+          🖼️ Splošno
         </button>
         <button className={`big-btn ${nalogaType === "avti" ? "active" : ""}`} onClick={() => setNalogaType("avti")}>
-          🚗 Nova Naloga: AVTI / WRAP
+          🚗 Vozila
         </button>
       </div>
 

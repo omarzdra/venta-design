@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Produkt {
@@ -14,7 +15,10 @@ model Produkt {
   prodajna_cena  Float
   nabavna_cena   Float
   tip            String
+  sirina         Float?
+  dobavitelj     String?
   lotProdukti    LotProdukt[]
+  nakupPostavke  NakupPostavka[]
 }
 
 model LotProdukt {
@@ -22,6 +26,7 @@ model LotProdukt {
   produkt_id      Int
   lot_stevilka    String
   kolicina_tm     Float
+  kolicina_m2     Float?
   nabavna_cena    Float
   prodajna_cena   Float
   datum_prevzema  DateTime
@@ -69,6 +74,9 @@ model DelovnaNalogaPlakati {
   naziv_projekta   String
   opis             String?
   opomba           String?
+  stevilka_delovnega_naloga String?
+  stevilka_racuna   String?
+  enota_materiala   String   @default("tm")
   narocnik_id      BigInt
   cena_dela        Float?
   cena_materiala   Float
@@ -118,6 +126,9 @@ model DelovnaNalogaAvti {
   opravljena_storitev String
   opis                String?
   opomba              String?
+  stevilka_delovnega_naloga String?
+  stevilka_racuna      String?
+  enota_materiala      String   @default("tm")
   vozilo_id           BigInt
   lastnik_vozila_id   BigInt
   cena_dela           Float?
@@ -180,4 +191,30 @@ model PrihodekManual {
   ddv_stopnja     Float?
   znesek_z_ddv    Float?
   stevilka_racuna String?
+}
+
+model Nakup {
+  id              Int       @id @default(autoincrement())
+  datum           DateTime
+  dobavitelj      String
+  stevilka_racuna String
+  neto_znesek     Float
+  bruto_znesek    Float
+  createdAt       DateTime  @default(now())
+
+  postavke        NakupPostavka[]
+}
+
+model NakupPostavka {
+  id          Int       @id @default(autoincrement())
+  nakup_id    Int
+  kategorija  String
+  opis        String
+  neto_cena   Float
+  ddv         Float
+  bruto_cena  Float
+  produkt_id  Int?
+
+  nakup       Nakup     @relation(fields: [nakup_id], references: [id])
+  produkt     Produkt?  @relation(fields: [produkt_id], references: [id])
 }

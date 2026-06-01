@@ -1,3 +1,23 @@
+.app-logo {
+  height: 40px;
+}
+
+:root {
+  --color-bg: #0a0a0a;
+  --color-surface: #141414;
+  --color-surface-2: #1e1e1e;
+  --color-border: #2a2a2a;
+  --color-primary: #e02020;
+  --color-primary-hover: #ff2929;
+  --color-primary-dark: #b01818;
+  --color-text: #f0f0f0;
+  --color-text-muted: #888888;
+  --color-text-inverse: #ffffff;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+}
 .counter {
   font-size: 16px;
   padding: 5px 10px;

@@ -17,6 +17,9 @@ const mapPlakatiRecord = (n) => ({
   naziv_projekta: n.naziv_projekta,
   opis: n.opis,
   opomba: n.opomba,
+  stevilka_delovnega_naloga: n.stevilka_delovnega_naloga,
+  stevilka_racuna: n.stevilka_racuna,
+  enota_materiala: n.enota_materiala,
   narocnik: n.narocnik ? {
     ime_narocnika: n.narocnik.ime_narocnika,
     gsm_stevilka: n.narocnik.gsm_stevilka,
@@ -38,6 +41,9 @@ const mapAvtiRecord = (n) => ({
   opravljena_storitev: n.opravljena_storitev,
   opis: n.opis,
   opomba: n.opomba,
+  stevilka_delovnega_naloga: n.stevilka_delovnega_naloga,
+  stevilka_racuna: n.stevilka_racuna,
+  enota_materiala: n.enota_materiala,
   vozilo: n.vozilo ? {
     registrska_stevilka: n.vozilo.registrska_stevilka,
     stevilka_sasije: n.vozilo.stevilka_sasije,
@@ -58,6 +64,12 @@ const mapAvtiRecord = (n) => ({
   datum: n.datum
 });
 
+const parseNumber = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isNaN(num) ? null : num;
+};
+
 // ==========================================
 // ZALOGA & PRODUKTI (za ZalogaView in ostalo)
 // ==========================================
@@ -74,10 +86,16 @@ app.get('/api/zaloga', async (req, res) => {
     });
 
     const enrichedProdukti = produkti.map(p => {
-      let totals = { kolicina: 0, vrednost: 0 };
+      let totals = { kolicina_tm: 0, kolicina_m2: 0, vrednost: 0 };
       p.lotProdukti.forEach(lot => {
-        totals.kolicina += lot.kolicina_tm;
-        totals.vrednost += lot.kolicina_tm * (lot.nabavna_cena || p.nabavna_cena);
+        const kolicinaTm = Number(lot.kolicina_tm || 0);
+        const kolicinaM2 = lot.kolicina_m2 !== null && lot.kolicina_m2 !== undefined
+          ? Number(lot.kolicina_m2)
+          : (p.sirina ? kolicinaTm * Number(p.sirina) : 0);
+        totals.kolicina_tm += kolicinaTm;
+        totals.kolicina_m2 += kolicinaM2;
+        const unitQty = kolicinaM2 > 0 ? kolicinaM2 : kolicinaTm;
+        totals.vrednost += unitQty * (lot.nabavna_cena || p.nabavna_cena);
       });
       return { ...p, totals };
     });
@@ -109,7 +127,9 @@ app.post('/api/produkti', async (req, res) => {
         naziv_produkta: req.body.naziv_produkta,
         tip: req.body.tip,
         nabavna_cena: Number(req.body.nabavna_cena),
-        prodajna_cena: Number(req.body.prodajna_cena)
+        prodajna_cena: Number(req.body.prodajna_cena),
+        sirina: req.body.sirina === null || req.body.sirina === undefined || req.body.sirina === "" ? null : Number(req.body.sirina),
+        dobavitelj: req.body.dobavitelj || null
       }
     });
     res.json(p);
@@ -120,13 +140,25 @@ app.post('/api/produkti', async (req, res) => {
 
 app.post('/api/lot_produkti', async (req, res) => {
   try {
-    const { produkt_id, lot_stevilka, kolicina_tm, nabavna_cena, prodajna_cena, datum_prevzema } = req.body;
+    const { produkt_id, lot_stevilka, kolicina_tm, kolicina_m2, nabavna_cena, prodajna_cena, datum_prevzema } = req.body;
     
     const produkt = await prisma.produkt.findUnique({ where: { id: Number(produkt_id) } });
     if (!produkt) return res.status(400).json({ message: "Produkt ne obstaja." });
 
     const finalNabavna = nabavna_cena !== undefined && nabavna_cena !== "" ? Number(nabavna_cena) : produkt.nabavna_cena;
     const finalProdajna = prodajna_cena !== undefined && prodajna_cena !== "" ? Number(prodajna_cena) : produkt.prodajna_cena;
+
+    const tmInput = parseNumber(kolicina_tm);
+    const m2Input = parseNumber(kolicina_m2);
+    if (tmInput === null && m2Input === null) {
+      return res.status(400).json({ message: "Vnesi kolicino v tm ali m2." });
+    }
+    if (m2Input !== null && !produkt.sirina) {
+      return res.status(400).json({ message: "Produkt nima nastavljene sirine za izracun m2." });
+    }
+
+    const computedTm = tmInput !== null ? tmInput : (m2Input !== null ? m2Input / Number(produkt.sirina) : null);
+    const computedM2 = m2Input !== null ? m2Input : (tmInput !== null && produkt.sirina ? tmInput * Number(produkt.sirina) : null);
 
     await prisma.produkt.update({
       where: { id: Number(produkt_id) },
@@ -141,7 +173,8 @@ app.post('/api/lot_produkti', async (req, res) => {
         id: newLotId,
         produkt_id: Number(produkt_id),
         lot_stevilka,
-        kolicina_tm: Number(kolicina_tm),
+        kolicina_tm: Number(computedTm),
+        kolicina_m2: computedM2 !== null ? Number(computedM2) : null,
         nabavna_cena: finalNabavna,
         prodajna_cena: finalProdajna,
         datum_prevzema: finalDatum,
@@ -159,8 +192,8 @@ app.post('/api/lot_produkti', async (req, res) => {
         stevilka_racuna: null,
         nabavna_cena: finalNabavna,
         prodajna_cena: null,
-        kolicina_tm: Number(kolicina_tm),
-        znesek: Number(kolicina_tm) * finalNabavna,
+        kolicina_tm: Number(computedTm),
+        znesek: Number(computedTm) * finalNabavna,
         ddv_stopnja: null,
         znesek_z_ddv: null
       }
@@ -202,6 +235,16 @@ app.get('/api/evidenca', async (req, res) => {
 
 app.get('/api/profit', async (req, res) => {
   try {
+    const { dobavitelj, kategorija, datum_od, datum_do, znesek_od, znesek_do } = req.query;
+    const filterDobavitelj = (dobavitelj || "").toString().trim().toLowerCase();
+    const kategorije = typeof kategorija === "string"
+      ? kategorija.split(",").map(k => k.trim().toLowerCase()).filter(Boolean)
+      : [];
+    const dateFrom = datum_od ? new Date(datum_od) : null;
+    const dateTo = datum_do ? new Date(datum_do) : null;
+    const amountFrom = parseNumber(znesek_od);
+    const amountTo = parseNumber(znesek_do);
+
     const plakatiRaw = await prisma.delovnaNalogaPlakati.findMany({
       include: { narocnik: true, materiali: true, slike: true }
     });
@@ -214,7 +257,12 @@ app.get('/api/profit', async (req, res) => {
     const evidenca = await prisma.evidencaZaloge.findMany({ where: { tip: "prevzem" } });
     const lots = await prisma.lotProdukt.findMany();
     const ostaliNakupi = await prisma.ostaliNakup.findMany();
+    const nakupiRaw = await prisma.nakup.findMany({
+      include: { postavke: { include: { produkt: true } } },
+      orderBy: { datum: "desc" }
+    });
 
+    // Naloga gre v analizo samo, ko je potrjena in ima ceno dela.
     const potrjenePlakati = plakati.filter(n => n.status === "potrjena" && n.cena_dela !== null);
     const potrjeneAvti = avti.filter(n => n.status === "potrjena" && n.cena_dela !== null);
 
@@ -224,24 +272,36 @@ app.get('/api/profit', async (req, res) => {
         datum: n.datum,
         datum_placila: null,
         opis: n.naziv_projekta,
+        naziv_projekta: n.naziv_projekta,
+        cena_dela: n.cena_dela,
+        cena_materiala: n.cena_materiala,
+        materiali: n.materiali,
+        enota_materiala: n.enota_materiala,
         narocnik: n.narocnik?.ime_narocnika,
-        podrobnosti: `Delo: ${n.cena_dela.toFixed(2)} €, Material: ${n.cena_materiala.toFixed(2)} €`,
+        podrobnosti: n.opis || "",
         znesek: n.cena_dela + n.cena_materiala,
         znesek_z_ddv: null,
         ddv_stopnja: null,
-        stevilka_racuna: null
+        stevilka_racuna: n.stevilka_racuna || null,
+        stevilka_delovnega_naloga: n.stevilka_delovnega_naloga || null
       })),
       ...potrjeneAvti.map(n => ({
         id: n.id.toString(),
         datum: n.datum,
         datum_placila: null,
         opis: `${n.opravljena_storitev || n.vozilo?.znamka_vozila}`,
+        opravljena_storitev: n.opravljena_storitev,
+        cena_dela: n.cena_dela,
+        cena_materiala: n.cena_materiala,
+        materiali: n.materiali,
+        enota_materiala: n.enota_materiala,
         narocnik: n.lastnik_vozila?.ime_lastnika,
-        podrobnosti: `Delo: ${n.cena_dela.toFixed(2)} €, Material: ${n.cena_materiala.toFixed(2)} €`,
+        podrobnosti: n.opis || "",
         znesek: n.cena_dela + n.cena_materiala,
         znesek_z_ddv: null,
         ddv_stopnja: null,
-        stevilka_racuna: null
+        stevilka_racuna: n.stevilka_racuna || null,
+        stevilka_delovnega_naloga: n.stevilka_delovnega_naloga || null
       })),
       ...prihodki.map(p => ({
         id: `prihodek_${p.id}`,
@@ -253,7 +313,8 @@ app.get('/api/profit', async (req, res) => {
         znesek: p.znesek,
         znesek_z_ddv: p.znesek_z_ddv,
         ddv_stopnja: p.ddv_stopnja,
-        stevilka_racuna: p.stevilka_racuna
+        stevilka_racuna: p.stevilka_racuna,
+        stevilka_delovnega_naloga: null
       }))
     ].sort((a, b) => b.datum.getTime() - a.datum.getTime());
 
@@ -270,7 +331,8 @@ app.get('/api/profit', async (req, res) => {
           opis: log.naziv_produkta,
           dobavitelj: lot?.dobavitelj || log.dobavitelj || "",
           stevilka_racuna: lot?.stevilka_racuna || log.stevilka_racuna || "",
-          podrobnosti: "Material",
+          podrobnosti: "material",
+          kategorija: "material",
           znesek: log.znesek !== null ? log.znesek : (log.kolicina_tm * log.nabavna_cena),
           ddv_stopnja: log.ddv_stopnja ?? null,
           znesek_z_ddv: log.znesek_z_ddv ?? null,
@@ -287,16 +349,121 @@ app.get('/api/profit', async (req, res) => {
         dobavitelj: n.dobavitelj,
         stevilka_racuna: n.stevilka_racuna || "",
         podrobnosti: n.podrobnosti,
+        kategorija: (n.podrobnosti || "drugo").toString().toLowerCase(),
         znesek: n.znesek,
         ddv_stopnja: n.ddv_stopnja,
         znesek_z_ddv: n.znesek_z_ddv
+      })),
+      ...nakupiRaw.map(n => ({
+        id: "nakup_new_" + n.id,
+        isNakup: true,
+        datum: n.datum,
+        dobavitelj: n.dobavitelj,
+        stevilka_racuna: n.stevilka_racuna,
+        neto_znesek: n.neto_znesek,
+        bruto_znesek: n.bruto_znesek,
+        postavke: n.postavke,
+        kategorija: n.postavke?.map(p => p.kategorija.toLowerCase()) || []
       }))
     ].sort((a, b) => b.datum.getTime() - a.datum.getTime());
 
-    const allDates = [...salesEvents, ...purchaseEvents].map(e => e.datum);
+    const filterByDate = (event) => {
+      if (!event.datum) return false;
+      const date = new Date(event.datum);
+      if (dateFrom && date < dateFrom) return false;
+      if (dateTo && date > dateTo) return false;
+      return true;
+    };
+
+    const filterByAmount = (event) => {
+      const amount = event.isNakup
+        ? Number(event.neto_znesek || 0)
+        : Number(event.znesek ?? event.znesek_z_ddv ?? 0);
+      if (amountFrom !== null && amount < amountFrom) return false;
+      if (amountTo !== null && amount > amountTo) return false;
+      return true;
+    };
+
+    const filterByDobavitelj = (event) => {
+      if (!filterDobavitelj) return true;
+      return (event.dobavitelj || "").toString().toLowerCase().includes(filterDobavitelj);
+    };
+
+    const filterByKategorija = (event) => {
+      if (!kategorije.length) return true;
+      if (event.isNakup) {
+        const cats = Array.isArray(event.kategorija) ? event.kategorija : [event.kategorija];
+        return cats.some(c => kategorije.includes((c || "").toString().toLowerCase()));
+      }
+      return kategorije.includes((event.kategorija || event.podrobnosti || "").toString().toLowerCase());
+    };
+
+    const filteredPurchases = purchaseEvents.filter(e => (
+      filterByDate(e) && filterByAmount(e) && filterByDobavitelj(e) && filterByKategorija(e)
+    ));
+
+    const filteredSales = salesEvents.filter(e => (
+      filterByDate(e) && filterByAmount(e)
+    ));
+
+    const allDates = [...filteredSales, ...filteredPurchases].map(e => e.datum);
     const availableMonths = Array.from(new Set(allDates.map(d => d.toISOString().substring(0, 7)))).sort((a,b)=>b.localeCompare(a));
 
-    res.json({ salesEvents, purchaseEvents, availableMonths });
+    res.json({ salesEvents: filteredSales, purchaseEvents: filteredPurchases, availableMonths });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/nakupi', async (req, res) => {
+  try {
+    const nakupi = await prisma.nakup.findMany({
+      include: { postavke: { include: { produkt: true } } },
+      orderBy: { datum: "desc" }
+    });
+    res.json(nakupi);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/nakupi', async (req, res) => {
+  try {
+    const { datum, dobavitelj, stevilka_racuna, postavke } = req.body;
+    if (!Array.isArray(postavke) || postavke.length === 0) {
+      return res.status(400).json({ error: "Vnesi vsaj eno postavko." });
+    }
+
+    const preparedPostavke = postavke.map(p => {
+      const neto = Number(p.neto_cena || 0);
+      const ddvRate = Number(p.ddv || 0);
+      const bruto = neto * (1 + ddvRate / 100);
+      return {
+        kategorija: p.kategorija,
+        opis: p.opis,
+        neto_cena: neto,
+        ddv: ddvRate,
+        bruto_cena: bruto,
+        produkt_id: p.produkt_id ? Number(p.produkt_id) : null
+      };
+    });
+
+    const neto_znesek = preparedPostavke.reduce((sum, p) => sum + p.neto_cena, 0);
+    const bruto_znesek = preparedPostavke.reduce((sum, p) => sum + p.bruto_cena, 0);
+
+    const created = await prisma.nakup.create({
+      data: {
+        datum: datum ? new Date(datum) : new Date(),
+        dobavitelj,
+        stevilka_racuna,
+        neto_znesek,
+        bruto_znesek,
+        postavke: { create: preparedPostavke }
+      },
+      include: { postavke: { include: { produkt: true } } }
+    });
+
+    res.json(created);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -526,6 +693,9 @@ app.post('/api/delovne_naloge_plakati', async (req, res) => {
         naziv_projekta: req.body.naziv_projekta,
         opis: req.body.opis,
         opomba: req.body.opomba,
+        stevilka_delovnega_naloga: req.body.stevilka_delovnega_naloga || null,
+        stevilka_racuna: req.body.stevilka_racuna || null,
+        enota_materiala: req.body.enota_materiala || "tm",
         narocnik_id: narocnik.id,
         cena_dela: cenaDela,
         cena_materiala: Number(req.body.cena_materiala),
@@ -590,6 +760,9 @@ app.post('/api/delovne_naloge_avti', async (req, res) => {
         opravljena_storitev: req.body.opravljena_storitev,
         opis: req.body.opis,
         opomba: req.body.opomba,
+        stevilka_delovnega_naloga: req.body.stevilka_delovnega_naloga || null,
+        stevilka_racuna: req.body.stevilka_racuna || null,
+        enota_materiala: req.body.enota_materiala || "tm",
         vozilo_id: vozilo.id,
         lastnik_vozila_id: lastnik.id,
         cena_dela: cenaDela,
@@ -670,6 +843,9 @@ app.put('/api/delovne_naloge_plakati/:id', async (req, res) => {
         naziv_projekta: req.body.naziv_projekta,
         opis: req.body.opis,
         opomba: req.body.opomba,
+        stevilka_delovnega_naloga: req.body.stevilka_delovnega_naloga || null,
+        stevilka_racuna: req.body.stevilka_racuna || null,
+        enota_materiala: req.body.enota_materiala || "tm",
         cena_dela: cenaDela,
         cena_materiala: Number(req.body.cena_materiala)
       }
@@ -754,6 +930,9 @@ app.put('/api/delovne_naloge_avti/:id', async (req, res) => {
         opravljena_storitev: req.body.opravljena_storitev,
         opis: req.body.opis,
         opomba: req.body.opomba,
+        stevilka_delovnega_naloga: req.body.stevilka_delovnega_naloga || null,
+        stevilka_racuna: req.body.stevilka_racuna || null,
+        enota_materiala: req.body.enota_materiala || "tm",
         cena_dela: cenaDela,
         cena_materiala: Number(req.body.cena_materiala)
       }
