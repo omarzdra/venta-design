@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="sl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Venta Industrial | Zaloga Materiala</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #0a0a0a;
+            color: #e3e2e2;
+            -webkit-font-smoothing: antialiased;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #141414;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #e02020;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary": "#003355",
+                      "primary-container": "#e02020",
+                      "on-primary-fixed-variant": "#930009",
+                      "on-primary": "#690004",
+                      "surface-container-lowest": "#0d0e0f",
+                      "on-primary-fixed": "#410002",
+                      "tertiary": "#9acbff",
+                      "secondary": "#c8c6c5",
+                      "surface-dim": "#121414",
+                      "secondary-fixed": "#e5e2e1",
+                      "surface-elevated": "#1e1e1e",
+                      "surface-container-high": "#292a2a",
+                      "surface-container": "#1f2020",
+                      "surface": "#121414",
+                      "on-secondary-container": "#b7b5b4",
+                      "border-low": "#2a2a2a",
+                      "tertiary-fixed-dim": "#9acbff",
+                      "on-tertiary-fixed-variant": "#004a79",
+                      "status-warning": "#f59e0b",
+                      "error-container": "#93000a",
+                      "text-high": "#f0f0f0",
+                      "on-surface": "#e3e2e2",
+                      "tertiary-fixed": "#d0e4ff",
+                      "bg-base": "#0a0a0a",
+                      "on-secondary-fixed": "#1b1b1c",
+                      "on-surface-variant": "#e7bdb7",
+                      "surface-bright": "#383939",
+                      "inverse-on-surface": "#303031",
+                      "surface-container-highest": "#343535",
+                      "inverse-primary": "#c0000f",
+                      "outline": "#ad8883",
+                      "on-secondary": "#303030",
+                      "surface-container-low": "#1b1c1c",
+                      "on-background": "#e3e2e2",
+                      "outline-variant": "#5d3f3c",
+                      "inverse-surface": "#e3e2e2",
+                      "on-tertiary-fixed": "#001d34",
+                      "error": "#ffb4ab",
+                      "primary-fixed-dim": "#ffb4aa",
+                      "on-primary-container": "#fff8f7",
+                      "surface-tint": "#ffb4aa",
+                      "primary-fixed": "#ffdad5",
+                      "background": "#121414",
+                      "status-success": "#22c55e",
+                      "secondary-fixed-dim": "#c8c6c5",
+                      "text-inverse": "#ffffff",
+                      "on-secondary-fixed-variant": "#474746",
+                      "secondary-container": "#474746",
+                      "on-error": "#690005",
+                      "tertiary-container": "#0077bf",
+                      "status-error": "#ef4444",
+                      "primary": "#ffb4aa",
+                      "on-tertiary-container": "#f7f9ff",
+                      "surface-variant": "#343535",
+                      "surface-card": "#141414"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "space-md": "16px",
+                      "container-max": "1440px",
+                      "space-sm": "8px",
+                      "gutter": "16px",
+                      "unit": "4px",
+                      "space-xs": "4px",
+                      "space-xl": "48px",
+                      "space-lg": "24px"
+              },
+              "fontFamily": {
+                      "headline-xl": ["Hanken Grotesk"],
+                      "headline-lg": ["Hanken Grotesk"],
+                      "body-lg": ["Hanken Grotesk"],
+                      "body-md": ["Hanken Grotesk"],
+                      "headline-md": ["Hanken Grotesk"],
+                      "data-mono": ["JetBrains Mono"],
+                      "label-caps": ["JetBrains Mono"]
+              },
+              "fontSize": {
+                      "headline-xl": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      </script>
+</head>
+<body class="bg-bg-base font-body-md text-on-surface">
+<!-- SIDEBAR NAVIGATION -->
+<aside class="h-screen w-64 fixed left-0 top-0 border-r border-border-low bg-surface-container flex flex-col py-space-lg">
+<div class="px-space-lg mb-space-xl">
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary-container">Venta Design</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Industrial Mgmt</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center px-space-lg py-3 text-primary-container font-bold bg-surface-elevated border-r-2 border-primary-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">inventory_2</span>
+<span class="font-label-caps text-label-caps">Zaloga Materiala</span>
+</a>
+<a class="flex items-center px-space-lg py-3 text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">handyman</span>
+<span class="font-label-caps text-label-caps">Delovni Nalogi</span>
+</a>
+<a class="flex items-center px-space-lg py-3 text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">visibility</span>
+<span class="font-label-caps text-label-caps">Evidenca</span>
+</a>
+<a class="flex items-center px-space-lg py-3 text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">analytics</span>
+<span class="font-label-caps text-label-caps">Analiza</span>
+</a>
+</nav>
+<div class="px-space-lg mb-space-lg">
+<button class="w-full py-3 bg-primary-container text-text-inverse font-bold rounded-lg flex items-center justify-center hover:bg-red-600 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined mr-2">add</span>
+<span class="font-label-caps text-label-caps">Ustvari nalog</span>
+</button>
+</div>
+<div class="mt-auto border-t border-border-low pt-space-lg">
+<a class="flex items-center px-space-lg py-3 text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">settings</span>
+<span class="font-label-caps text-label-caps">Nastavitve</span>
+</a>
+<a class="flex items-center px-space-lg py-3 text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">help</span>
+<span class="font-label-caps text-label-caps">Podpora</span>
+</a>
+</div>
+</aside>
+<!-- MAIN CONTENT CANVAS -->
+<main class="ml-64 min-h-screen">
+<!-- TOP APP BAR -->
+<header class="h-16 px-gutter flex justify-between items-center bg-bg-base border-b border-border-low sticky top-0 z-40">
+<div class="flex items-center flex-1 max-w-xl">
+<div class="relative w-full group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-elevated border border-border-low rounded-lg py-2 pl-10 pr-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container transition-all text-body-md font-body-md" placeholder="Išči materiale, LOTe ali kode..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-space-md ml-space-lg">
+<button class="p-2 text-on-surface-variant hover:text-primary-container transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-primary-container rounded-full ring-2 ring-bg-base"></span>
+</button>
+<div class="flex items-center gap-3 pl-space-md border-l border-border-low">
+<div class="text-right">
+<p class="font-label-caps text-label-caps text-text-high">Admin Uporabnik</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-widest">Vodja zaloge</p>
+</div>
+<img alt="Avatar" class="w-10 h-10 rounded-full border border-primary-container/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4NELcXmvmDbnfzM1UQ_iED13Xu9D4GEdrh90AmGW4G2sXGKSYvba-_oJKBUSj9DpaTVFYrV1s3UkYd5D2TSUN7xk0xUPnhyQHJ4Pe1fLnhdnaKv4wZy4MQkg9plQPJbUejVi750zskfee1PsOp3XYqyGBpJRvhPsItWvGr6Q-h7RhRKWbjYqKyU7Dztj0U9YZKfH8nwUIYE-CpWpVj3Kb3bj0pCD4dGZ_rD-KW5DJdTXP-wHARuLTtvUqWqjFYNi1UCZ7BgC8ZA"/>
+</div>
+</div>
+</header>
+<!-- DASHBOARD CONTENT -->
+<div class="p-space-lg">
+<!-- HEADER SECTION -->
+<div class="mb-space-lg">
+<h2 class="font-headline-xl text-headline-xl text-text-high mb-1">Zaloga Materiala</h2>
+<p class="text-on-surface-variant font-body-md">Sprotno sledenje materiala in razpoložljivost.</p>
+</div>
+<!-- KPI BENTO GRID -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md mb-space-lg">
+<!-- Total TM -->
+<div class="bg-surface-card border border-border-low p-space-lg flex flex-col justify-between">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-4">Skupaj TM</p>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-status-success font-data-mono">42,850.5</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">TM</span>
+</div>
+<div class="mt-4 flex items-center gap-1 text-[10px] text-status-success font-bold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+12.4% glede na prejšnji mesec</span>
+</div>
+</div>
+<!-- Total M2 -->
+<div class="bg-surface-card border border-border-low p-space-lg flex flex-col justify-between">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-4">Skupaj m²</p>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-status-success font-data-mono">85,701.0</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">m²</span>
+</div>
+<div class="mt-4 flex items-center gap-1 text-[10px] text-status-success font-bold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+8.1% glede na prejšnji mesec</span>
+</div>
+</div>
+<!-- Total Value -->
+<div class="bg-surface-card border border-border-low p-space-lg flex flex-col justify-between border-l-4 border-l-primary-container">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-4">Vrednost zaloge</p>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-text-high font-data-mono">$1,248,500</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">USD</span>
+</div>
+<div class="mt-4 flex items-center gap-1 text-[10px] text-on-surface-variant font-bold uppercase">
+<span class="material-symbols-outlined text-sm">update</span>
+<span>Posodobljeno pred 2 min</span>
+</div>
+</div>
+</div>
+<!-- INVENTORY TABLE -->
+<div class="bg-surface-card border border-border-low overflow-hidden">
+<div class="p-space-md border-b border-border-low flex justify-between items-center bg-surface-container-low">
+<div class="flex items-center gap-space-md">
+<span class="font-label-caps text-label-caps text-text-high">Seznam materialov</span>
+<div class="flex bg-bg-base border border-border-low rounded-lg p-0.5">
+<button class="px-3 py-1 text-[10px] font-bold font-label-caps bg-surface-elevated text-primary-container">VSE</button>
+<button class="px-3 py-1 text-[10px] font-bold font-label-caps text-on-surface-variant hover:text-text-high">FOLIJA</button>
+<button class="px-3 py-1 text-[10px] font-bold font-label-caps text-on-surface-variant hover:text-text-high">VINIL</button>
+</div>
+</div>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-text-high transition-colors">
+<span class="material-symbols-outlined text-lg">filter_list</span>
+<span class="font-label-caps text-label-caps">Napredni filter</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-border-low">
+<th class="w-12 px-space-md py-4"></th>
+<th class="px-space-md py-4 font-label-caps text-label-caps text-on-surface-variant">Koda</th>
+<th class="px-space-md py-4 font-label-caps text-label-caps text-on-surface-variant">Naziv</th>
+<th class="px-space-md py-4 font-label-caps text-label-caps text-on-surface-variant">Tip</th>
+<th class="px-space-md py-4 font-label-caps text-label-caps text-on-surface-variant">Širina (m)</th>
+<th class="px-space-md py-4 font-label-caps text-label-caps text-on-surface-variant">Skupaj TM</th>
+<th class="px-space-md py-4 font-label-caps text-label-caps text-on-surface-variant">Skupaj m²</th>
+<th class="px-space-md py-4 font-label-caps text-label-caps text-on-surface-variant text-right">Akcije</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-low">
+<!-- ROW 1 -->
+<tr class="hover:bg-surface-elevated transition-colors cursor-pointer group" onclick="toggleLot('lot-1')">
+<td class="px-space-md py-4 text-center">
+<span class="material-symbols-outlined text-on-surface-variant transition-transform" id="icon-1">chevron_right</span>
+</td>
+<td class="px-space-md py-4 font-data-mono text-primary-container font-bold">VN-702-BLK</td>
+<td class="px-space-md py-4 font-body-md text-text-high">Carbon Fiber Twill (Matte)</td>
+<td class="px-space-md py-4">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-status-error/10 text-status-error border border-status-error/20 font-label-caps uppercase">Folija</span>
+</td>
+<td class="px-space-md py-4 font-data-mono">1.52</td>
+<td class="px-space-md py-4 font-data-mono">1,240.0</td>
+<td class="px-space-md py-4 font-data-mono">1,884.8</td>
+<td class="px-space-md py-4 text-right">
+<button class="p-2 hover:bg-bg-base rounded transition-colors text-on-surface-variant hover:text-primary-container">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</td>
+</tr>
+<!-- EXPANDABLE LOT DETAILS 1 -->
+<tr class="hidden bg-bg-base" id="lot-1">
+<td class="p-0" colspan="8">
+<div class="p-space-lg border-l-2 border-primary-container ml-12 my-2">
+<div class="mb-3 flex justify-between items-center">
+<h4 class="font-label-caps text-label-caps text-primary-container">Aktivni Loti za VN-702-BLK</h4>
+<button class="px-3 py-1 bg-surface-elevated border border-border-low text-[10px] font-bold font-label-caps hover:border-primary-container transition-colors">+ Dodaj nov LOT</button>
+</div>
+<table class="w-full text-[13px]">
+<thead>
+<tr class="text-on-surface-variant font-label-caps border-b border-border-low/50">
+<th class="py-2 text-left">LOT številka</th>
+<th class="py-2 text-left">Preostanek TM</th>
+<th class="py-2 text-left">Preostanek m²</th>
+<th class="py-2 text-left">Cena/m (USD)</th>
+<th class="py-2 text-right">Akcije</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-low/30">
+<tr class="hover:bg-surface-elevated/50">
+<td class="py-2 font-data-mono">LOT-2023-04-X</td>
+<td class="py-2 font-data-mono">450.0</td>
+<td class="py-2 font-data-mono">684.0</td>
+<td class="py-2 font-data-mono">$24.50</td>
+<td class="py-2 text-right">
+<button class="text-[10px] font-bold font-label-caps text-primary-container hover:underline">PRE-ETIKETIRAJ</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-elevated/50">
+<td class="py-2 font-data-mono">LOT-2023-09-Y</td>
+<td class="py-2 font-data-mono">790.0</td>
+<td class="py-2 font-data-mono">1,200.8</td>
+<td class="py-2 font-data-mono">$26.00</td>
+<td class="py-2 text-right">
+<button class="text-[10px] font-bold font-label-caps text-primary-container hover:underline">PRE-ETIKETIRAJ</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</td>
+</tr>
+<!-- ROW 2 -->
+<tr class="hover:bg-surface-elevated transition-colors cursor-pointer group" onclick="toggleLot('lot-2')">
+<td class="px-space-md py-4 text-center">
+<span class="material-symbols-outlined text-on-surface-variant transition-transform" id="icon-2">chevron_right</span>
+</td>
+<td class="px-space-md py-4 font-data-mono text-primary-container font-bold">VN-305-RED</td>
+<td class="px-space-md py-4 font-body-md text-text-high">Nappa Leather (Racing Red)</td>
+<td class="px-space-md py-4">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-status-warning/10 text-status-warning border border-status-warning/20 font-label-caps uppercase">Usnje</span>
+</td>
+<td class="px-space-md py-4 font-data-mono">1.40</td>
+<td class="px-space-md py-4 font-data-mono">520.5</td>
+<td class="px-space-md py-4 font-data-mono">728.7</td>
+<td class="px-space-md py-4 text-right">
+<button class="p-2 hover:bg-bg-base rounded transition-colors text-on-surface-variant hover:text-primary-container">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</td>
+</tr>
+<tr class="hidden bg-bg-base" id="lot-2">
+<td class="p-0" colspan="8">
+<div class="p-space-lg border-l-2 border-primary-container ml-12 my-2">
+<div class="mb-3 flex justify-between items-center">
+<h4 class="font-label-caps text-label-caps text-primary-container">Aktivni Loti za VN-305-RED</h4>
+<button class="px-3 py-1 bg-surface-elevated border border-border-low text-[10px] font-bold font-label-caps hover:border-primary-container transition-colors">+ Dodaj nov LOT</button>
+</div>
+<div class="text-center py-4 text-on-surface-variant opacity-50 font-label-caps">
+                                            Na voljo je samo en aktiven lot.
+                                        </div>
+</div>
+</td>
+</tr>
+<!-- ROW 3 -->
+<tr class="hover:bg-surface-elevated transition-colors cursor-pointer group" onclick="toggleLot('lot-3')">
+<td class="px-space-md py-4 text-center">
+<span class="material-symbols-outlined text-on-surface-variant transition-transform" id="icon-3">chevron_right</span>
+</td>
+<td class="px-space-md py-4 font-data-mono text-primary-container font-bold">VN-900-CLR</td>
+<td class="px-space-md py-4 font-body-md text-text-high">Protective Sealant Film</td>
+<td class="px-space-md py-4">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-status-success/10 text-status-success border border-status-success/20 font-label-caps uppercase">Film</span>
+</td>
+<td class="px-space-md py-4 font-data-mono">2.00</td>
+<td class="px-space-md py-4 font-data-mono">3,100.0</td>
+<td class="px-space-md py-4 font-data-mono">6,200.0</td>
+<td class="px-space-md py-4 text-right">
+<button class="p-2 hover:bg-bg-base rounded transition-colors text-on-surface-variant hover:text-primary-container">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-space-md border-t border-border-low flex justify-between items-center bg-surface-container-low text-[11px] font-label-caps text-on-surface-variant">
+<p>Prikazano 1-12 od 154 materialov</p>
+<div class="flex gap-2">
+<button class="w-8 h-8 flex items-center justify-center border border-border-low hover:border-primary-container hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center border border-primary-container text-primary-container bg-surface-elevated font-bold">1</button>
+<button class="w-8 h-8 flex items-center justify-center border border-border-low hover:border-primary-container hover:text-primary-container transition-colors">2</button>
+<button class="w-8 h-8 flex items-center justify-center border border-border-low hover:border-primary-container hover:text-primary-container transition-colors">3</button>
+<button class="w-8 h-8 flex items-center justify-center border border-border-low hover:border-primary-container hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- SECONDARY ACTIONS / STATUS -->
+<div class="grid grid-cols-1 gap-space-lg mt-space-lg">
+<!-- Recent Adjustments -->
+<div class="bg-surface-card border border-border-low p-space-lg">
+<h3 class="font-label-caps text-label-caps text-text-high mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container text-lg">history</span>
+                        Zadnje LOT spremembe
+                    </h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-bg-base border border-border-low rounded">
+<div class="flex gap-4 items-center">
+<div class="w-10 h-10 rounded bg-primary-container/10 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined">edit_square</span>
+</div>
+<div>
+<p class="font-data-mono text-sm">VN-702-BLK</p>
+<p class="text-[10px] text-on-surface-variant font-label-caps uppercase">Lot ID posodobljen s strani Admina</p>
+</div>
+</div>
+<span class="font-data-mono text-[11px] text-on-surface-variant">12:45</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-bg-base border border-border-low rounded">
+<div class="flex gap-4 items-center">
+<div class="w-10 h-10 rounded bg-status-success/10 flex items-center justify-center text-status-success">
+<span class="material-symbols-outlined">add_box</span>
+</div>
+<div>
+<p class="font-data-mono text-sm">VN-900-CLR</p>
+<p class="text-[10px] text-on-surface-variant font-label-caps uppercase">Nov prihod zaloge - 200 TM</p>
+</div>
+</div>
+<span class="font-data-mono text-[11px] text-on-surface-variant">09:12</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FLOATING ACTION BUTTON -->
+<button class="fixed bottom-space-lg right-space-lg w-14 h-14 bg-primary-container text-text-inverse rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-200 z-50">
+<span class="material-symbols-outlined text-2xl">barcode_scanner</span>
+</button>
+<script>
+        function toggleLot(lotId) {
+            const el = document.getElementById(lotId);
+            const iconId = 'icon-' + lotId.split('-')[1];
+            const icon = document.getElementById(iconId);
+            
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                icon.style.transform = 'rotate(90deg)';
+                el.classList.add('animate-fade-in');
+            } else {
+                el.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Simple Fade-in animation
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.3s ease-out forwards;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body></html>

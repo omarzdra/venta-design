@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="sl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "bg-base": "#0a0a0a",
+                        "tertiary-fixed": "#d0e4ff",
+                        "on-tertiary-fixed-variant": "#004a79",
+                        "surface": "#121414",
+                        "border-low": "#2a2a2a",
+                        "text-high": "#f0f0f0",
+                        "on-secondary-fixed": "#1b1b1c",
+                        "error": "#ffb4ab",
+                        "surface-dim": "#121414",
+                        "primary": "#ffb4aa",
+                        "surface-tint": "#ffb4aa",
+                        "on-tertiary-fixed": "#001d34",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "surface-elevated": "#1e1e1e",
+                        "surface-container-high": "#292a2a",
+                        "on-primary-fixed": "#410002",
+                        "status-success": "#22c55e",
+                        "surface-container": "#1f2020",
+                        "on-primary-container": "#fff8f7",
+                        "inverse-primary": "#c0000f",
+                        "surface-bright": "#383939",
+                        "on-primary": "#690004",
+                        "on-tertiary": "#003355",
+                        "on-surface": "#e3e2e2",
+                        "outline": "#ad8883",
+                        "on-surface-variant": "#e7bdb7",
+                        "outline-variant": "#5d3f3c",
+                        "tertiary-container": "#0077bf",
+                        "tertiary": "#9acbff",
+                        "surface-container-highest": "#343535",
+                        "status-warning": "#f59e0b",
+                        "primary-fixed-dim": "#ffb4aa",
+                        "on-secondary": "#303030",
+                        "inverse-on-surface": "#303031",
+                        "background": "#121414",
+                        "tertiary-fixed-dim": "#9acbff",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "status-error": "#ef4444",
+                        "primary-container": "#e02020",
+                        "primary-fixed": "#ffdad5",
+                        "surface-variant": "#343535",
+                        "surface-card": "#141414",
+                        "secondary-fixed": "#e5e2e1",
+                        "surface-container-lowest": "#0d0e0f",
+                        "on-tertiary-container": "#f7f9ff",
+                        "on-secondary-fixed-variant": "#474746",
+                        "secondary": "#c8c6c5",
+                        "on-secondary-container": "#b7b5b4",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#1b1c1c",
+                        "on-primary-fixed-variant": "#930009",
+                        "secondary-container": "#474746",
+                        "on-background": "#e3e2e2",
+                        "inverse-surface": "#e3e2e2",
+                        "text-inverse": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "space-md": "16px",
+                        "unit": "4px",
+                        "space-sm": "8px",
+                        "container-max": "1440px",
+                        "space-xs": "4px",
+                        "space-lg": "24px",
+                        "gutter": "16px",
+                        "space-xl": "48px"
+                    },
+                    "fontFamily": {
+                        "headline-xl-mobile": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "data-mono": ["JetBrains Mono"],
+                        "body-md": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-xl": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-xl-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-xl": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0a0a0a;
+            color: #e3e2e2;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #121414;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+            border-radius: 2px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-body-md-mobile flex flex-col min-h-screen">
+<!-- Top Navigation -->
+<header class="w-full top-0 sticky bg-surface dark:bg-surface border-b border-border-low z-40 transition-colors duration-200 flex justify-between items-center px-space-md h-16">
+<div class="flex items-center gap-space-sm">
+<button class="material-symbols-outlined text-primary hover:bg-surface-elevated p-2 rounded-full">arrow_back</button>
+<span class="font-headline-md-mobile text-headline-md-mobile font-bold text-primary">Naloga Detail</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-elevated p-2 rounded-full">edit</button>
+<div class="w-8 h-8 rounded-full bg-surface-container border border-border-low overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCD_TYeBBO1hGI8nDZCgEFL2gtdaMMG47SppqEnl5xXjdnIO5nB101cRJZfIw9CiuMvt7hcb_DadLGZ23B81z6I_v2OMQPR1YVMAeuB-CNZ5hAX89W5nvF9zG5-1OTc3Ub3tKqmXkrPvdBQeJCjEzrgLgHyZShjpDzPRlUpix8sZaV1gQMrZ7atZ31bH_FJkBaPeS0DdKFPo1ZEIte-YwDrrPTtbi9ltf_nBC4yldVYuxaHiTNJU5o_zTKPjkVs1U0lxwf78OHXpg"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pb-32">
+<div class="px-space-md pt-space-md space-y-space-md max-w-lg mx-auto">
+<!-- Hero Header Section -->
+<div class="bg-surface-card border border-border-low p-space-md rounded-lg">
+<div class="flex justify-between items-start mb-space-sm">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">DELOVNI NALOG</p>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-text-high">#WO-2024-0892</h1>
+</div>
+<span class="font-label-caps text-label-caps bg-primary-container text-on-primary-container px-3 py-1 rounded-full">V TEKU</span>
+</div>
+<div class="mt-space-md space-y-unit">
+<p class="font-body-md text-body-md-mobile text-on-surface-variant">Projekt:</p>
+<p class="font-headline-md text-headline-md text-primary">Avtoservis &amp; Tuning Venta</p>
+</div>
+</div>
+<!-- Vehicle & Damage Status (Specific to request) -->
+<div class="bg-surface-card border border-border-low p-space-md rounded-lg">
+<div class="flex items-center gap-2 mb-space-md">
+<span class="material-symbols-outlined text-primary">directions_car</span>
+<h2 class="font-label-caps text-label-caps uppercase text-text-high">Podatki o vozilu</h2>
+</div>
+<div class="grid grid-cols-2 gap-space-md">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">ZNAMKA / MODEL</p>
+<p class="font-body-lg text-body-lg-mobile text-text-high">Audi RS6 Performance</p>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">VIN ŠTEVILKA</p>
+<p class="font-data-mono text-data-mono text-text-high">WAUZZZ4GZHN00213</p>
+</div>
+</div>
+<div class="mt-space-lg">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-space-sm">CHECKLISTA POŠKODB</p>
+<div class="space-y-space-sm">
+<div class="flex items-center justify-between p-2 bg-surface-elevated rounded border border-border-low">
+<span class="font-body-md text-body-md-mobile">Praske na platiščih</span>
+<span class="material-symbols-outlined text-status-error">report</span>
+</div>
+<div class="flex items-center justify-between p-2 bg-surface-elevated rounded border border-border-low">
+<span class="font-body-md text-body-md-mobile">Poškodba laka (hauba)</span>
+<span class="material-symbols-outlined text-status-warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div class="flex items-center justify-between p-2 bg-surface-elevated rounded border border-border-low">
+<span class="font-body-md text-body-md-mobile">Notranje oblazinjenje</span>
+<span class="material-symbols-outlined text-status-success">check_circle</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Dates & Contact -->
+<div class="grid grid-cols-2 gap-space-md">
+<div class="bg-surface-card border border-border-low p-space-md rounded-lg">
+<p class="font-label-caps text-label-caps text-on-surface-variant">ROK IZVEDBE</p>
+<p class="font-data-mono text-data-mono text-text-high">12. MAJ 2024</p>
+</div>
+<div class="bg-surface-card border border-border-low p-space-md rounded-lg">
+<p class="font-label-caps text-label-caps text-on-surface-variant">PREVZEM</p>
+<p class="font-data-mono text-data-mono text-text-high">08:00 AM</p>
+</div>
+</div>
+<div class="bg-surface-card border border-border-low p-space-md rounded-lg">
+<div class="flex items-center justify-between mb-space-sm">
+<h2 class="font-label-caps text-label-caps uppercase text-text-high">Stranka</h2>
+<button class="material-symbols-outlined text-primary">call</button>
+</div>
+<p class="font-headline-md text-headline-md text-text-high">Marko Kovač s.p.</p>
+<p class="font-body-md text-body-md-mobile text-on-surface-variant mt-1">marko.kovac@email.si</p>
+<p class="font-body-md text-body-md-mobile text-on-surface-variant">+386 41 223 344</p>
+</div>
+<!-- Material Consumption Table -->
+<div class="bg-surface-card border border-border-low rounded-lg overflow-hidden">
+<div class="p-space-md border-b border-border-low">
+<h2 class="font-label-caps text-label-caps uppercase text-text-high">Poraba materiala</h2>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-surface-container text-on-surface-variant">
+<tr>
+<th class="px-space-md py-2 font-label-caps text-label-caps">LOT / ARTIKEL</th>
+<th class="px-space-md py-2 font-label-caps text-label-caps text-right">KOL.</th>
+<th class="px-space-md py-2 font-label-caps text-label-caps text-right">ZNESEK</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-low">
+<tr class="hover:bg-surface-elevated transition-colors">
+<td class="px-space-md py-3">
+<p class="font-body-md text-body-md-mobile text-text-high">Motorno Olje 5W30</p>
+<p class="font-data-mono text-[10px] text-on-surface-variant">L-2024-X991</p>
+</td>
+<td class="px-space-md py-3 text-right font-data-mono">8L</td>
+<td class="px-space-md py-3 text-right font-data-mono">€152,00</td>
+</tr>
+<tr class="hover:bg-surface-elevated transition-colors">
+<td class="px-space-md py-3">
+<p class="font-body-md text-body-md-mobile text-text-high">Oljni filter S-Line</p>
+<p class="font-data-mono text-[10px] text-on-surface-variant">L-2024-F442</p>
+</td>
+<td class="px-space-md py-3 text-right font-data-mono">1 kos</td>
+<td class="px-space-md py-3 text-right font-data-mono">€45,50</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-space-md bg-surface-container flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">SKUPAJ MATERIAL</span>
+<span class="font-headline-md text-headline-md text-primary">€197,50</span>
+</div>
+</div>
+<!-- Evidence Photos -->
+<div class="bg-surface-card border border-border-low p-space-md rounded-lg">
+<div class="flex items-center justify-between mb-space-md">
+<h2 class="font-label-caps text-label-caps uppercase text-text-high">Slikovni dokazi</h2>
+<span class="font-label-caps text-label-caps text-on-surface-variant">4 SLIKE</span>
+</div>
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="aspect-video bg-surface-elevated rounded border border-border-low overflow-hidden relative group">
+<img class="w-full h-full object-cover" data-alt="A professional close-up shot of a car mechanic's tools and a high-performance engine component being serviced in a dimly lit, high-tech industrial workshop. The scene uses a dramatic dark-mode aesthetic with deep blacks and sharp Venta red highlights on the tools. Cold white studio lighting catches the metallic textures and oily surfaces of the engine. The mood is precise, technical, and authoritative." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdJDZ6wpLLP-ABX9nmQzhiCmXAw_rr9tUnJJ7dGSIupUgEBH6zYdjeJdPI9EheAu1-PvJQXa-su5ZeotS-fYeKknWksDXOHm-JhdhdpkTFGcuwSScyymzOF9itf2W909wQYv0BFByYuIJyjOZRd_-hdZj7JNC564hbZ8itiSkPwnR2XZoUy1ycfq_tCBWwWJM2m9pIslrM9QmHlfxIVwB0AVwn8_QeMO_c3lXH6ysq_UpETnOb1ilAEvoy_i8KfPfHeprWif05nA"/>
+<div class="absolute inset-0 bg-bg-base/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-text-high">visibility</span>
+</div>
+</div>
+<div class="aspect-video bg-surface-elevated rounded border border-border-low overflow-hidden relative group">
+<img class="w-full h-full object-cover" data-alt="Detailed macro photograph showing the precise application of technical fluid into a modern vehicle engine assembly within a clean industrial environment. The color palette is dominated by dark charcoal tones and reflective metallic surfaces, with vibrant red accents from the specialized equipment. The lighting is focused and cinematic, creating a professional atmosphere of automotive engineering excellence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuARQSaKejxLYszTqpuVy3M3juCRmPX4z_GVDOieV7kVkqT6DPqrXhXnlI29D1oo07N5ijFLSgmWaqDvVcSzSVajL31aWcaf_hiE3ljE4a8lviO_FEo-7UkOcjWgdgHNUnxUX8KVLSQ7G15hGRgt04AMeVJ3N6LYoSade4pDc050H8L4gE5Xk-Q5XunJOjiyCxDN9Df_VrTJZFttS_w5S-ixBzAxmMo2Q7ICDhb9uOAwzj7xCuQ_oNJIzHcixhLlW2tvDJKCBRzxAg"/>
+<div class="absolute inset-0 bg-bg-base/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-text-high">visibility</span>
+</div>
+</div>
+<div class="aspect-video bg-surface-elevated rounded border border-border-low flex items-center justify-center cursor-pointer hover:bg-surface-container transition-colors border-dashed col-span-2 py-6">
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-on-surface-variant mb-2">add_a_photo</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">DODAJ DOKAZ</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Actions & Navigation -->
+<div class="fixed bottom-0 left-0 w-full z-50">
+<!-- Floating Actions Panel -->
+<div class="px-space-md pb-4 pt-2 bg-gradient-to-t from-bg-base via-bg-base to-transparent">
+<div class="flex flex-col gap-space-sm max-w-lg mx-auto">
+<div class="flex gap-space-sm">
+<button class="flex-1 bg-surface-elevated border border-border-low text-text-high py-4 rounded-lg font-headline-md flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined">task_alt</span>
+                        Končaj
+                    </button>
+<button class="flex-1 bg-primary-container text-on-primary-container py-4 rounded-lg font-headline-md flex items-center justify-center gap-2 hover:bg-[#ff2929] transition-all shadow-lg active:scale-95">
+<span class="material-symbols-outlined">payments</span>
+                        Potrdi s ceno
+                    </button>
+</div>
+</div>
+</div>
+<!-- Shared Component: BottomNavBar -->
+<nav class="flex justify-around items-center h-20 px-space-sm bg-surface border-t border-border-low">
+<a class="flex flex-col items-center justify-center text-on-secondary-container hover:bg-surface-elevated px-4 py-1 rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-caps text-label-caps mt-1">Zaloga</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-label-caps text-label-caps mt-1">Naloge</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-container hover:bg-surface-elevated px-4 py-1 rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-caps text-label-caps mt-1">Evidenca</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-container hover:bg-surface-elevated px-4 py-1 rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-label-caps mt-1">Analiza</span>
+</a>
+</nav>
+</div>
+<!-- Micro-interaction Script -->
+<script>
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('click', function(e) {
+                const ripple = document.createElement('div');
+                ripple.classList.add('ripple');
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+    </script>
+</body></html>

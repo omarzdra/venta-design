@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="sl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Venta Industrial | Nov delovni nalog</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary": "#003355",
+                        "primary-container": "#e02020",
+                        "on-primary-fixed-variant": "#930009",
+                        "on-primary": "#690004",
+                        "surface-container-lowest": "#0d0e0f",
+                        "on-primary-fixed": "#410002",
+                        "tertiary": "#9acbff",
+                        "secondary": "#c8c6c5",
+                        "surface-dim": "#121414",
+                        "secondary-fixed": "#e5e2e1",
+                        "surface-elevated": "#1e1e1e",
+                        "surface-container-high": "#292a2a",
+                        "surface-container": "#1f2020",
+                        "surface": "#121414",
+                        "on-secondary-container": "#b7b5b4",
+                        "border-low": "#2a2a2a",
+                        "tertiary-fixed-dim": "#9acbff",
+                        "on-tertiary-fixed-variant": "#004a79",
+                        "status-warning": "#f59e0b",
+                        "error-container": "#93000a",
+                        "text-high": "#f0f0f0",
+                        "on-surface": "#e3e2e2",
+                        "tertiary-fixed": "#d0e4ff",
+                        "bg-base": "#0a0a0a",
+                        "on-secondary-fixed": "#1b1b1c",
+                        "on-surface-variant": "#e7bdb7",
+                        "surface-bright": "#383939",
+                        "inverse-on-surface": "#303031",
+                        "surface-container-highest": "#343535",
+                        "inverse-primary": "#c0000f",
+                        "outline": "#ad8883",
+                        "on-secondary": "#303030",
+                        "surface-container-low": "#1b1c1c",
+                        "on-background": "#e3e2e2",
+                        "outline-variant": "#5d3f3c",
+                        "inverse-surface": "#e3e2e2",
+                        "on-tertiary-fixed": "#001d34",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#ffb4aa",
+                        "on-primary-container": "#fff8f7",
+                        "surface-tint": "#ffb4aa",
+                        "primary-fixed": "#ffdad5",
+                        "background": "#121414",
+                        "status-success": "#22c55e",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "text-inverse": "#ffffff",
+                        "on-secondary-fixed-variant": "#474746",
+                        "secondary-container": "#474746",
+                        "on-error": "#690005",
+                        "tertiary-container": "#0077bf",
+                        "status-error": "#ef4444",
+                        "primary": "#ffb4aa",
+                        "on-tertiary-container": "#f7f9ff",
+                        "surface-variant": "#343535",
+                        "surface-card": "#141414"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "space-md": "16px",
+                        "container-max": "1440px",
+                        "space-sm": "8px",
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "space-xs": "4px",
+                        "space-xl": "48px",
+                        "space-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-xl": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "data-mono": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "headline-xl": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { background-color: #0a0a0a; color: #e3e2e2; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #121414; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+        input:focus, select:focus, textarea:focus { 
+            outline: none !important; 
+            box-shadow: 0 0 0 2px rgba(224, 32, 32, 0.4) !important;
+            border-color: #e02020 !important;
+        }
+        .vehicle-grid-cell:hover { background-color: rgba(224, 32, 32, 0.1); }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="h-screen w-64 fixed left-0 top-0 border-r border-border-low bg-surface-container flex flex-col py-space-lg z-50">
+<div class="px-space-lg mb-space-xl">
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Venta Design</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant opacity-70">Industrial Mgmt</p>
+</div>
+<nav class="flex-1 space-y-1 px-space-sm">
+<a class="flex items-center gap-3 px-space-md py-3 text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-caps text-label-caps">Zaloga</span>
+</a>
+<a class="flex items-center gap-3 px-space-md py-3 text-primary font-bold bg-surface-elevated border-r-2 border-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">handyman</span>
+<span class="font-label-caps text-label-caps">Naloge</span>
+</a>
+<a class="flex items-center gap-3 px-space-md py-3 text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">visibility</span>
+<span class="font-label-caps text-label-caps">Evidenca</span>
+</a>
+<a class="flex items-center gap-3 px-space-md py-3 text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-label-caps">Analiza</span>
+</a>
+</nav>
+<div class="mt-auto px-space-sm space-y-1">
+<a class="flex items-center gap-3 px-space-md py-3 text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps">Nastavitve</span>
+</a>
+<a class="flex items-center gap-3 px-space-md py-3 text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-caps text-label-caps">Podpora</span>
+</a>
+</div>
+</aside>
+<!-- Top App Bar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-bg-base border-b border-border-low flex justify-between items-center px-gutter z-40">
+<div class="flex items-center gap-gutter">
+<h2 class="font-headline-md text-headline-md font-black text-primary">Nov delovni nalog</h2>
+<div class="flex bg-surface-container rounded-lg p-1">
+<button class="px-space-lg py-1.5 font-label-caps text-label-caps rounded bg-surface-elevated text-primary shadow-sm transition-all duration-200" id="tab-general" onclick="toggleType('general')">Splošno</button>
+<button class="px-space-lg py-1.5 font-label-caps text-label-caps rounded text-on-surface-variant hover:text-text-high transition-all duration-200" id="tab-vehicles" onclick="toggleType('vehicles')">Vozila</button>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative flex items-center bg-surface-container px-3 py-1.5 rounded border border-border-low focus-within:ring-2 focus-within:ring-primary">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-2">search</span>
+<input class="bg-transparent border-none text-body-md p-0 w-48 focus:ring-0" placeholder="Iskanje nalogov..." type="text"/>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">account_circle</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-16 p-gutter h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar">
+<div class="max-w-[1200px] mx-auto">
+<!-- Dual Column Layout -->
+<div class="grid grid-cols-12 gap-space-lg">
+<!-- Left Column: Core Info -->
+<div class="col-span-8 space-y-space-lg">
+<!-- Basic Info Card -->
+<section class="bg-surface-card border border-border-low p-space-lg rounded-lg">
+<div class="flex items-center justify-between mb-space-lg">
+<h3 class="font-label-caps text-label-caps text-primary uppercase tracking-widest">Osnovni podatki</h3>
+<span class="px-2 py-0.5 bg-error-container text-on-error-container font-label-caps text-[10px] rounded">OSNUTEK</span>
+</div>
+<div class="grid grid-cols-2 gap-space-lg">
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-space-xs">ŠTEVILKA DELOVNEGA NALOGA</label>
+<input class="w-full bg-surface-elevated border-border-low rounded p-2 text-data-mono font-data-mono opacity-60" readonly="" type="text" value="WO-2023-9901"/>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-space-xs">NAZIV PROJEKTA</label>
+<input class="w-full bg-surface-elevated border-border-low rounded p-2 text-body-md" placeholder="Vnesite naziv industrial projekta" type="text"/>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-space-xs">IME NAROČNIKA</label>
+<select class="w-full bg-surface-elevated border-border-low rounded p-2 text-body-md">
+<option>Global Logistics Corp</option>
+<option>Precision Aero Dynamics</option>
+<option>Venta Internal Labs</option>
+</select>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-space-xs">KONTAKT NAROČNIKA</label>
+<input class="w-full bg-surface-elevated border-border-low rounded p-2 text-body-md" placeholder="Iskanje po ID-ju ali imenu" type="text"/>
+</div>
+</div>
+</section>
+<!-- Vehicles Section (Conditional) -->
+<section class="bg-surface-card border border-border-low p-space-lg rounded-lg transition-all duration-300" id="vehicle-fields">
+<h3 class="font-label-caps text-label-caps text-primary uppercase tracking-widest mb-space-lg">Logistika vozila</h3>
+<div class="grid grid-cols-3 gap-space-md mb-space-lg">
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-space-xs">ŠTEVILKA ŠASIJE (VIN)</label>
+<input class="w-full bg-surface-elevated border-border-low rounded p-2 text-data-mono font-data-mono uppercase" placeholder="17-mestna številka" type="text"/>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-space-xs">REGISTRSKA ŠTEVILKA</label>
+<input class="w-full bg-surface-elevated border-border-low rounded p-2 text-data-mono font-data-mono uppercase" placeholder="ABC-1234" type="text"/>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-space-xs">STAV ODOMETRA (KM)</label>
+<input class="w-full bg-surface-elevated border-border-low rounded p-2 text-data-mono font-data-mono" placeholder="0.00" type="number"/>
+</div>
+</div>
+<div class="border-t border-border-low pt-space-lg">
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-space-md">PREGLED VIZUALNIH POŠKODB</label>
+<div class="bg-bg-base rounded border border-border-low relative aspect-video flex items-center justify-center p-4">
+<!-- Simulated vehicle schematic -->
+<div class="w-full h-full opacity-30 pointer-events-none">
+<img class="w-full h-full object-contain filter grayscale invert" data-alt="Technical blueprint of an industrial vehicle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADNuvPcrdnIqnPLFrHikodDTMqjDmEIgJe1rgba7W37wbc_6e9WytMdb7aUhiNQQ0vXYCuesb2IH7TAaGUNWJky5yXygH2Xz_jEJ6ZOu6B4SsjOjIBG3y6EgyE3mbrPMv0zF5pLukJaHmWQ1M_mmJqShjXxEoynkD5S62w4w_d1EPQ4qD8YPdfgnWt23QoMRsCX3fnAkXQQEmlTGpMfIPO9SfZyFDxUM_z7UpOeRQShA1gn4J-R-pEDkx4vP4CExfnUhw16S2rrg"/>
+</div>
+<div class="absolute inset-0 grid grid-cols-6 grid-rows-4 p-4">
+<script>for(let i=0; i<24; i++) document.write('<div onclick="this.classList.toggle(\'bg-primary/20\')" class="vehicle-grid-cell border border-border-low/20 rounded-sm cursor-pointer flex items-center justify-center group"><span class="material-symbols-outlined text-[10px] opacity-0 group-hover:opacity-100">add</span></div>');</script>
+</div>
+</div>
+<p class="text-[10px] font-label-caps text-on-surface-variant mt-2 text-center">KLIKNITE ZA OZNAČITEV POŠKODB NA SHEMI</p>
+</div>
+</section>
+<!-- Material Consumption Card -->
+<section class="bg-surface-card border border-border-low p-space-lg rounded-lg">
+<div class="flex items-center justify-between mb-space-lg">
+<h3 class="font-label-caps text-label-caps text-primary uppercase tracking-widest">Poraba materiala</h3>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-sm">inventory</span>
+<span class="font-data-mono text-data-mono text-status-success">Na zalogi: 98%</span>
+</div>
+</div>
+<div class="space-y-space-sm mb-space-lg">
+<div class="flex gap-space-md items-end">
+<div class="flex-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-space-xs">IZBERITE KOMPONENTO</label>
+<div class="relative">
+<select class="w-full bg-surface-elevated border-border-low rounded p-2 text-body-md appearance-none">
+<option>Steel Casting Alloy #402</option>
+<option>Hydraulic Sealant Premium</option>
+<option>Carbon Fiber Insert R-Series</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-2 pointer-events-none text-on-surface-variant">expand_more</span>
+</div>
+</div>
+<div class="w-32">
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-space-xs">KOLIČINA</label>
+<input class="w-full bg-surface-elevated border-border-low rounded p-2 text-body-md text-center" type="number" value="1"/>
+</div>
+<button class="bg-primary-container text-white p-2 rounded hover:bg-[#ff2929] transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<!-- List of added items -->
+<div class="mt-space-lg border border-border-low rounded overflow-hidden">
+<table class="w-full text-left text-sm">
+<thead class="bg-surface-container border-b border-border-low">
+<tr>
+<th class="p-3 font-label-caps text-on-surface-variant">OPIS ARTIKLA</th>
+<th class="p-3 font-label-caps text-on-surface-variant text-right">KOL</th>
+<th class="p-3 font-label-caps text-on-surface-variant text-right">CENA NA ENOTO</th>
+<th class="p-3 font-label-caps text-on-surface-variant text-right">SKUPAJ</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-low">
+<tr class="hover:bg-surface-elevated transition-colors">
+<td class="p-3 font-medium text-text-high">Heavy Duty Bolt M12</td>
+<td class="p-3 text-right font-data-mono">12</td>
+<td class="p-3 text-right font-data-mono">4,50 €</td>
+<td class="p-3 text-right font-data-mono">54,00 €</td>
+</tr>
+<tr class="hover:bg-surface-elevated transition-colors">
+<td class="p-3 font-medium text-text-high">Lubricant Grade X</td>
+<td class="p-3 text-right font-data-mono">2</td>
+<td class="p-3 text-right font-data-mono">28,00 €</td>
+<td class="p-3 text-right font-data-mono text-status-warning">56,00 €</td>
+</tr>
+</tbody>
+<tfoot class="bg-surface-container-high font-bold border-t border-border-low">
+<tr>
+<td class="p-3 text-right font-label-caps" colspan="3">OCENJENA VREDNOST SKUPAJ</td>
+<td class="p-3 text-right font-data-mono text-primary text-lg">110,00 €</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Media & Actions -->
+<div class="col-span-4 space-y-space-lg">
+<!-- Media Section -->
+<section class="bg-surface-card border border-border-low p-space-lg rounded-lg">
+<div class="flex items-center justify-between mb-space-lg">
+<h3 class="font-label-caps text-label-caps text-primary uppercase tracking-widest">Slike in dokumentacija</h3>
+<button class="text-primary hover:underline font-label-caps text-[10px]">ODPRI KAMERO</button>
+</div>
+<!-- Upload Dropzone -->
+<div class="border-2 border-dashed border-border-low rounded-lg p-space-lg text-center bg-bg-base mb-space-lg hover:border-primary transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant mb-2 group-hover:text-primary">upload_file</span>
+<p class="text-body-md text-on-surface-variant">Povlecite in spustite ali <span class="text-primary font-bold">prebrskajte</span></p>
+<p class="text-[10px] font-label-caps opacity-40 mt-1">MAKS. VELIKOST: 12MB (JPG, PNG, PDF)</p>
+</div>
+<!-- Gallery Grid -->
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="relative group rounded overflow-hidden aspect-square bg-surface-elevated border border-border-low">
+<img class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" data-alt="Industrial engine part macro" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsldFKY9xpF2hY86hpyCEyd3OeeKwVPG3JYvuT168dx_ECTyZr-FgoHW3VzMl8MtvTAxfupIOtC84XaStoB6S8n-gaLg-6CyKJdsviyb73rjs7JbleshqSY-3GSGTfg72StWCPAgDCKttJmgTgEm4lw99A2GfjA2eAG2yO6IOVmeEywQPZf1TI8u0TQm6L8gkK506QEGzkfjmqAylYa_bujvyBbOVmKJ4FCsw-syL6hhUCunCZoBNC6MbMSyjitQRtdGEPweXLyA"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-white cursor-pointer hover:text-primary">visibility</span>
+<span class="material-symbols-outlined text-white cursor-pointer hover:text-primary">delete</span>
+</div>
+</div>
+<div class="relative group rounded overflow-hidden aspect-square bg-surface-elevated border border-border-low">
+<img class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" data-alt="Industrial hydraulic press" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMcgLPmt7qtVM1maWRNkeZZbQXkA-zqTPM6Zoz9RyeP02PmPU0pCPoY_MkMUjqtr_Cyid-orcLohFIbUwcVR88qCrKQGHoxMQFlo0KRDIE8sRsMTfQ8ne9c3yPmo1pik1z6c3jGEdauDz81Xqw5xqH-qRmEGDCKfLyJa1jcA2T39IKAeyYud67VaEQJ48PYZ1EEaiCixv1-lGhZf9IE3Ih1kJq_n8tFysxrKcQh1PnveKB28LsnZUEaPkjkhihtpMuOW3oZqiq6Q"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-white cursor-pointer hover:text-primary">visibility</span>
+<span class="material-symbols-outlined text-white cursor-pointer hover:text-primary">delete</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Sticky Final Actions -->
+<div class="flex flex-col gap-space-sm pt-space-lg">
+<button class="w-full bg-primary-container text-white py-4 rounded-lg font-headline-md text-headline-md font-bold shadow-lg hover:bg-[#ff2929] active:scale-[0.98] transition-all">
+                            USTVARI NALOG
+                        </button>
+<button class="w-full border border-border-low text-on-surface py-3 rounded-lg font-label-caps text-label-caps hover:bg-surface-elevated transition-colors">
+                            SHRANI KOT OSNUTEK
+                        </button>
+<button class="w-full text-on-error-container/60 hover:text-status-error font-label-caps text-[10px] py-2 transition-colors">
+                            ZAVRZI SPREMEMBE
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Micro-interactions Script -->
+<script>
+        function toggleType(type) {
+            const btnGeneral = document.getElementById('tab-general');
+            const btnVehicles = document.getElementById('tab-vehicles');
+            const vehicleSection = document.getElementById('vehicle-fields');
+
+            if (type === 'vehicles') {
+                btnVehicles.classList.add('bg-surface-elevated', 'text-primary', 'shadow-sm');
+                btnVehicles.classList.remove('text-on-surface-variant');
+                btnGeneral.classList.remove('bg-surface-elevated', 'text-primary', 'shadow-sm');
+                btnGeneral.classList.add('text-on-surface-variant');
+                vehicleSection.style.display = 'block';
+                vehicleSection.classList.remove('opacity-0', 'scale-95');
+            } else {
+                btnGeneral.classList.add('bg-surface-elevated', 'text-primary', 'shadow-sm');
+                btnGeneral.classList.remove('text-on-surface-variant');
+                btnVehicles.classList.remove('bg-surface-elevated', 'text-primary', 'shadow-sm');
+                btnVehicles.classList.add('text-on-surface-variant');
+                vehicleSection.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => { vehicleSection.style.display = 'none'; }, 200);
+            }
+        }
+
+        // Initialize state
+        document.addEventListener('DOMContentLoaded', () => {
+            toggleType('general');
+        });
+    </script>
+</body></html>

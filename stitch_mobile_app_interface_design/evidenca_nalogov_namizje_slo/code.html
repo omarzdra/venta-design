@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="sl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Venta Industrial | Evidenca Delovnih Nalogov</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #0a0a0a;
+            color: #e3e2e2;
+            font-family: 'Hanken Grotesk', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0e0f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #e02020;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary": "#003355",
+                        "primary-container": "#e02020",
+                        "on-primary-fixed-variant": "#930009",
+                        "on-primary": "#690004",
+                        "surface-container-lowest": "#0d0e0f",
+                        "on-primary-fixed": "#410002",
+                        "tertiary": "#9acbff",
+                        "secondary": "#c8c6c5",
+                        "surface-dim": "#121414",
+                        "secondary-fixed": "#e5e2e1",
+                        "surface-elevated": "#1e1e1e",
+                        "surface-container-high": "#292a2a",
+                        "surface-container": "#1f2020",
+                        "surface": "#121414",
+                        "on-secondary-container": "#b7b5b4",
+                        "border-low": "#2a2a2a",
+                        "tertiary-fixed-dim": "#9acbff",
+                        "on-tertiary-fixed-variant": "#004a79",
+                        "status-warning": "#f59e0b",
+                        "error-container": "#93000a",
+                        "text-high": "#f0f0f0",
+                        "on-surface": "#e3e2e2",
+                        "tertiary-fixed": "#d0e4ff",
+                        "bg-base": "#0a0a0a",
+                        "on-secondary-fixed": "#1b1b1c",
+                        "on-surface-variant": "#e7bdb7",
+                        "surface-bright": "#383939",
+                        "inverse-on-surface": "#303031",
+                        "surface-container-highest": "#343535",
+                        "inverse-primary": "#c0000f",
+                        "outline": "#ad8883",
+                        "on-secondary": "#303030",
+                        "surface-container-low": "#1b1c1c",
+                        "on-background": "#e3e2e2",
+                        "outline-variant": "#5d3f3c",
+                        "inverse-surface": "#e3e2e2",
+                        "on-tertiary-fixed": "#001d34",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#ffb4aa",
+                        "on-primary-container": "#fff8f7",
+                        "surface-tint": "#ffb4aa",
+                        "primary-fixed": "#ffdad5",
+                        "background": "#121414",
+                        "status-success": "#22c55e",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "text-inverse": "#ffffff",
+                        "on-secondary-fixed-variant": "#474746",
+                        "secondary-container": "#474746",
+                        "on-error": "#690005",
+                        "tertiary-container": "#0077bf",
+                        "status-error": "#ef4444",
+                        "primary": "#ffb4aa",
+                        "on-tertiary-container": "#f7f9ff",
+                        "surface-variant": "#343535",
+                        "surface-card": "#141414"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "space-md": "16px",
+                        "container-max": "1440px",
+                        "space-sm": "8px",
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "space-xs": "4px",
+                        "space-xl": "48px",
+                        "space-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-xl": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "data-mono": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "headline-xl": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-bg-base text-on-surface">
+<!-- SideNavBar Anchor -->
+<aside class="h-screen w-64 fixed left-0 top-0 border-r border-border-low bg-surface-container flex flex-col py-space-lg z-50">
+<div class="px-space-lg mb-space-xl">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container flex items-center justify-center rounded-lg">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">precision_manufacturing</span>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary leading-none">Venta</h1>
+<p class="font-label-caps text-[10px] tracking-widest text-on-surface-variant mt-1">UPRAVLJANJE</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-3 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-caps text-label-caps">Zaloga Materiala</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">handyman</span>
+<span class="font-label-caps text-label-caps">Delovni Nalogi</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold bg-surface-elevated border-r-2 border-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">visibility</span>
+<span class="font-label-caps text-label-caps">Evidenca</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-elevated hover:text-text-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-label-caps">Analiza</span>
+</a>
+</nav>
+<div class="px-space-lg mb-8">
+<button class="w-full bg-primary-container text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-[#ff2929] active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span class="font-label-caps text-label-caps">Nov Delovni Nalog</span>
+</button>
+</div>
+<div class="px-3 border-t border-border-low pt-6 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-elevated transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps">Nastavitve</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-surface-elevated transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-caps text-label-caps">Podpora</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar Anchor -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-bg-base border-b border-border-low flex justify-between items-center px-gutter z-40">
+<div class="flex items-center gap-8">
+<h2 class="font-headline-md text-headline-md font-black text-primary">Evidenca Delovnih Nalogov</h2>
+<div class="relative w-96 group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] transition-colors group-focus-within:text-primary">search</span>
+<input class="w-full bg-surface-elevated border border-border-low rounded-lg pl-10 pr-4 py-2 text-body-md focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all" placeholder="Išči po ID naloga, naročniku ali delu..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary-container rounded-full"></span>
+</button>
+<div class="h-8 w-[1px] bg-border-low mx-2"></div>
+<div class="flex items-center gap-3 cursor-pointer group">
+<div class="text-right">
+<p class="text-body-md font-bold leading-none">Marcus Venta</p>
+<p class="text-[10px] text-on-surface-variant font-label-caps">ADMINISTRATOR</p>
+</div>
+<span class="material-symbols-outlined text-[32px] text-on-surface-variant group-hover:text-primary transition-colors">account_circle</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-16 min-h-screen">
+<div class="p-gutter max-w-container-max mx-auto space-y-space-lg">
+<!-- Filter Panel -->
+<section class="bg-surface-card border border-border-low rounded-xl p-space-md grid grid-cols-12 gap-4 items-end">
+<div class="col-span-3 space-y-2">
+<label class="block font-label-caps text-label-caps text-on-surface-variant uppercase">Obdobje</label>
+<div class="flex items-center gap-2 bg-surface-elevated border border-border-low rounded-lg px-3 py-2">
+<span class="material-symbols-outlined text-primary text-[18px]">calendar_today</span>
+<input class="bg-transparent border-none p-0 text-body-md text-text-high w-full focus:ring-0" type="text" value="12. okt 2023 - 26. okt 2023"/>
+</div>
+</div>
+<div class="col-span-2 space-y-2">
+<label class="block font-label-caps text-label-caps text-on-surface-variant uppercase">Status</label>
+<select class="w-full bg-surface-elevated border border-border-low rounded-lg px-3 py-2 text-body-md text-text-high appearance-none focus:ring-2 focus:ring-primary outline-none">
+<option>Vsi statusi</option>
+<option>V izdelavi</option>
+<option>Dokončana</option>
+<option>Potrjena</option>
+</select>
+</div>
+<div class="col-span-3 space-y-2">
+<label class="block font-label-caps text-label-caps text-on-surface-variant uppercase">Naročnik</label>
+<input class="w-full bg-surface-elevated border border-border-low rounded-lg px-3 py-2 text-body-md text-text-high focus:ring-2 focus:ring-primary outline-none" placeholder="Filtriraj po naročniku..." type="text"/>
+</div>
+<div class="col-span-2 space-y-2">
+<label class="block font-label-caps text-label-caps text-on-surface-variant uppercase">Prioriteta</label>
+<div class="flex gap-2">
+<button class="flex-1 py-2 bg-surface-elevated border border-border-low rounded-lg text-body-md hover:border-primary-container transition-colors">Nizka</button>
+<button class="flex-1 py-2 bg-surface-elevated border border-primary-container rounded-lg text-primary text-body-md font-bold">Visoka</button>
+</div>
+</div>
+<div class="col-span-2">
+<button class="w-full bg-surface-bright text-text-high py-2 rounded-lg font-bold flex items-center justify-center gap-2 border border-border-low hover:bg-surface-elevated transition-all">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+<span>Filtriraj</span>
+</button>
+</div>
+</section>
+<!-- Data Summary KPIs -->
+<section class="grid grid-cols-4 gap-space-md">
+<div class="bg-surface-card border border-border-low p-space-md rounded-xl">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">AKTIVNI NALOGI</p>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-text-high">1,248</span>
+<span class="text-status-success text-body-md font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">trending_up</span> 12%
+                    </span>
+</div>
+</div>
+<div class="bg-surface-card border border-border-low p-space-md rounded-xl">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">NUJNO</p>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-status-error">24</span>
+<span class="text-on-surface-variant text-[12px] font-label-caps">DO DANES</span>
+</div>
+</div>
+<div class="bg-surface-card border border-border-low p-space-md rounded-xl">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">POVP. ČAS IZDELAVE</p>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-text-high font-data-mono">4.2d</span>
+<span class="text-on-surface-variant text-[12px] font-label-caps">NA NALOG</span>
+</div>
+</div>
+<div class="bg-surface-card border border-border-low p-space-md rounded-xl">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">DOSTOPNOST SISTEMA</p>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl text-status-success font-data-mono">99.9%</span>
+<div class="flex gap-1 h-2 w-16 bg-surface-container rounded-full overflow-hidden self-center ml-2">
+<div class="bg-status-success h-full w-[90%]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Evidence Data Table -->
+<section class="bg-surface-card border border-border-low rounded-xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container border-b border-border-low">
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">ID NALOGA</th>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Naročnik / Projekt</th>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Datum vnosa</th>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Prioriteta</th>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Status</th>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Dokumentacija</th>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest text-right">Akcije</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-low">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-elevated transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-status-error"></div>
+<span class="font-data-mono text-primary font-bold">#WO-8829-X</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-text-high">Apex Dynamics</span>
+<span class="text-body-md text-on-surface-variant">Sestava turbine B-4</span>
+</div>
+</td>
+<td class="px-6 py-4 font-data-mono text-on-surface-variant">24. okt 2023</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded bg-error-container/30 text-error text-[10px] font-bold uppercase tracking-widest">KRITIČNO</span>
+</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full bg-error-container text-on-primary-container text-[11px] font-bold uppercase">V izdelavi</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded border-2 border-surface-card bg-surface-container flex items-center justify-center text-[12px] font-bold" title="PDF Navodila">P</div>
+<div class="w-8 h-8 rounded border-2 border-surface-card bg-surface-container flex items-center justify-center text-[12px] font-bold" title="CAD Datoteka">C</div>
+<div class="w-8 h-8 rounded border-2 border-surface-card bg-surface-container flex items-center justify-center text-[12px] font-bold" title="Dnevnik slik">I</div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-surface-container-high rounded transition-colors text-on-surface-variant hover:text-primary" title="Ogled podrobnosti">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded transition-colors text-on-surface-variant hover:text-primary" title="Uredi">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-elevated transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-status-warning"></div>
+<span class="font-data-mono text-primary font-bold">#WO-8830-L</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-text-high">Titan Logistics</span>
+<span class="text-body-md text-on-surface-variant">Kalibracija tekočega traku</span>
+</div>
+</td>
+<td class="px-6 py-4 font-data-mono text-on-surface-variant">23. okt 2023</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded bg-secondary-container/30 text-on-surface-variant text-[10px] font-bold uppercase tracking-widest">SREDNJA</span>
+</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full bg-status-warning/20 text-status-warning text-[11px] font-bold uppercase border border-status-warning/30">Dokončana</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded border-2 border-surface-card bg-surface-container flex items-center justify-center text-[12px] font-bold" title="PDF Navodila">P</div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-surface-container-high rounded transition-colors text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded transition-colors text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-elevated transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-status-success"></div>
+<span class="font-data-mono text-primary font-bold">#WO-8831-M</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-text-high">Helix Core</span>
+<span class="text-body-md text-on-surface-variant">Hidravlično testiranje</span>
+</div>
+</td>
+<td class="px-6 py-4 font-data-mono text-on-surface-variant">22. okt 2023</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded bg-secondary-container/30 text-on-surface-variant text-[10px] font-bold uppercase tracking-widest">NIZKA</span>
+</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full bg-status-success/20 text-status-success text-[11px] font-bold uppercase border border-status-success/30">Potrjena</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded border-2 border-surface-card bg-surface-container flex items-center justify-center text-[12px] font-bold">P</div>
+<div class="w-8 h-8 rounded border-2 border-surface-card bg-surface-container flex items-center justify-center text-[12px] font-bold">S</div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-surface-container-high rounded transition-colors text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded transition-colors text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-elevated transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-status-error"></div>
+<span class="font-data-mono text-primary font-bold">#WO-8835-A</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-text-high">Precision Cast</span>
+<span class="text-body-md text-on-surface-variant">Preverjanje integritete kalupa</span>
+</div>
+</td>
+<td class="px-6 py-4 font-data-mono text-on-surface-variant">21. okt 2023</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded bg-error-container/30 text-error text-[10px] font-bold uppercase tracking-widest">KRITIČNO</span>
+</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full bg-error-container text-on-primary-container text-[11px] font-bold uppercase">V izdelavi</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded border-2 border-surface-card bg-surface-container flex items-center justify-center text-[12px] font-bold">I</div>
+<div class="w-8 h-8 rounded border-2 border-surface-card bg-surface-container flex items-center justify-center text-[12px] font-bold">D</div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-surface-container-high rounded transition-colors text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded transition-colors text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="bg-surface-container px-6 py-4 border-t border-border-low flex justify-between items-center">
+<span class="text-on-surface-variant text-body-md">Prikazano <span class="text-text-high font-bold">1-10</span> od <span class="text-text-high font-bold">156</span> zapisov</span>
+<div class="flex gap-2">
+<button class="p-2 rounded border border-border-low hover:bg-surface-elevated transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<div class="flex gap-1">
+<button class="w-10 h-10 rounded bg-primary-container text-white font-bold">1</button>
+<button class="w-10 h-10 rounded hover:bg-surface-elevated transition-colors">2</button>
+<button class="w-10 h-10 rounded hover:bg-surface-elevated transition-colors">3</button>
+<span class="w-10 h-10 flex items-center justify-center">...</span>
+<button class="w-10 h-10 rounded hover:bg-surface-elevated transition-colors">16</button>
+</div>
+<button class="p-2 rounded border border-border-low hover:bg-surface-elevated transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Bottom Context Bar / Help -->
+<footer class="flex justify-between items-center py-space-md text-on-surface-variant">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-status-success shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+<span class="text-label-caps">Sistem deluje brezhibno</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">cloud_sync</span>
+<span class="text-label-caps">Zadnja sinhronizacija: pred 2 min</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-label-caps">Venta OS v4.2.1-industrial</span>
+<span class="material-symbols-outlined cursor-help hover:text-primary transition-colors">info</span>
+</div>
+</footer>
+</div>
+</main>
+<script>
+    // Micro-interactions for table rows
+    document.querySelectorAll('tbody tr').forEach(row => {
+        row.addEventListener('mousedown', () => {
+            row.style.transform = 'scale(0.998)';
+            row.style.transition = 'transform 0.1s ease';
+        });
+        row.addEventListener('mouseup', () => {
+            row.style.transform = 'scale(1)';
+        });
+    });
+
+    // Search bar focus effect
+    const searchInput = document.querySelector('input[type="text"]');
+    searchInput.addEventListener('focus', () => {
+        searchInput.parentElement.classList.add('w-[450px]');
+    });
+    searchInput.addEventListener('blur', () => {
+        searchInput.parentElement.classList.remove('w-[450px]');
+    });
+</script>
+</body></html>

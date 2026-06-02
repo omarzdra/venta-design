@@ -1,47 +1,48 @@
+﻿import { supabase } from "./supabaseClient";
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
+async function authHeader() {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function request(path, options = {}) {
-    const response = await fetch(`${API_URL}${path}`, {
-        headers: {
-            "Content-Type": "application/json",
-            ...(options.headers || {})
-        },
-        ...options
-    });
-
-    const isJson = response.headers.get("content-type")?.includes("application/json");
-    const data = isJson ? await response.json() : null;
-
-    if (!response.ok) {
-        throw new Error(data?.message || data?.error || "Prišlo je do napake na strežniku.");
-    }
-
-    return data;
+  const headers = {
+    "Content-Type": "application/json",
+    ...(await authHeader()),
+    ...(options.headers || {})
+  };
+  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const isJson = response.headers.get("content-type")?.includes("application/json");
+  const data = isJson ? await response.json() : null;
+  if (!response.ok) throw new Error(data?.message || data?.error || "Prišlo je do napake na strežniku.");
+  return data;
 }
 
-// Nove backend rute, ki vračajo že strukturirane in preračunane podatke
-export async function getZaloga() { return request("/api/zaloga"); }
-export async function getProfit(params) {
-    const query = params ? new URLSearchParams(params).toString() : "";
-    const suffix = query ? `?${query}` : "";
-    return request(`/api/profit${suffix}`);
-}
-export async function getNakupi() { return request("/api/nakupi"); }
+const query = (params = {}) => {
+  const clean = Object.fromEntries(Object.entries(params).filter(([, value]) => value !== "" && value !== null && value !== undefined));
+  const qs = new URLSearchParams(clean).toString();
+  return qs ? `?${qs}` : "";
+};
 
-// Stare rute (očiščene _sort in _order, saj backend zdaj sam sortira)
-export async function getProdukti() { return request("/api/produkti"); }
-export async function getLotProdukti() { return request("/api/lot_produkti"); }
-export async function getNalogePlakati() { return request("/api/delovne_naloge_plakati"); }
-export async function getNalogeAvti() { return request("/api/delovne_naloge_avti"); }
-
-// Akcije
-export async function addProdukt(payload) { return request("/api/produkti", { method: "POST", body: JSON.stringify(payload) }); }
-export async function addLotProdukt(payload) { return request("/api/lot_produkti", { method: "POST", body: JSON.stringify(payload) }); }
-export async function createNalogaPlakati(payload) { return request("/api/delovne_naloge_plakati", { method: "POST", body: JSON.stringify(payload) }); }
-export async function createNalogaAvti(payload) { return request("/api/delovne_naloge_avti", { method: "POST", body: JSON.stringify(payload) }); }
-export async function updateNalogaPlakati(id, payload) { return request(`/api/delovne_naloge_plakati/${id}`, { method: "PUT", body: JSON.stringify(payload) }); }
-export async function updateNalogaAvti(id, payload) { return request(`/api/delovne_naloge_avti/${id}`, { method: "PUT", body: JSON.stringify(payload) }); }
-export async function addOstaliNakup(payload) { return request("/api/ostali_nakupi", { method: "POST", body: JSON.stringify(payload) }); }
-export async function addPrihodek(payload) { return request("/api/prihodki", { method: "POST", body: JSON.stringify(payload) }); }
-export async function addNakup(payload) { return request("/api/nakupi", { method: "POST", body: JSON.stringify(payload) }); }
-export async function potrdiLotProdukt(id, payload) { return request(`/api/lot_produkti/${id}/potrdi`, { method: "PUT", body: JSON.stringify(payload) }); }
+export const api = {
+  me: () => request("/api/auth/me"),
+  zaloga: () => request("/api/zaloga"),
+  produkti: () => request("/api/produkti"),
+  createProdukt: (payload) => request("/api/produkti", { method: "POST", body: JSON.stringify(payload) }),
+  lots: (params) => request(`/api/lot_produkti${query(params)}`),
+  updateLot: (id, payload) => request(`/api/lot_produkti/${id}/lot_stevilka`, { method: "PATCH", body: JSON.stringify(payload) }),
+  nakupi: (params) => request(`/api/nakupi${query(params)}`),
+  createNakup: (payload) => request("/api/nakupi", { method: "POST", body: JSON.stringify(payload) }),
+  naloge: (params) => request(`/api/naloge${query(params)}`),
+  createNaloga: (payload) => request("/api/naloge", { method: "POST", body: JSON.stringify(payload) }),
+  updateNaloga: (id, payload) => request(`/api/naloge/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  dokoncajNaloga: (id) => request(`/api/naloge/${id}/dokoncaj`, { method: "PATCH", body: JSON.stringify({}) }),
+  potrdiNaloga: (id, payload) => request(`/api/naloge/${id}/potrdi`, { method: "PATCH", body: JSON.stringify(payload) }),
+  prihodki: (params) => request(`/api/prihodki${query(params)}`),
+  createPrihodek: (payload) => request("/api/prihodki", { method: "POST", body: JSON.stringify(payload) }),
+  analizaSummary: (params) => request(`/api/analiza/summary${query(params)}`),
+  analizaProdaja: (params) => request(`/api/analiza/prodaja${query(params)}`)
+};

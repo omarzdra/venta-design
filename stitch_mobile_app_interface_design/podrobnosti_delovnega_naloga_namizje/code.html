@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="sl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Venta Industrial - Detajli Delovnega Naloga</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #0a0a0a;
+            color: #e3e2e2;
+            font-family: 'Hanken Grotesk', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #141414;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #e02020;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "bg-base": "#0a0a0a",
+                      "tertiary-fixed": "#d0e4ff",
+                      "on-tertiary-fixed-variant": "#004a79",
+                      "surface": "#121414",
+                      "border-low": "#2a2a2a",
+                      "text-high": "#f0f0f0",
+                      "on-secondary-fixed": "#1b1b1c",
+                      "error": "#ffb4ab",
+                      "surface-dim": "#121414",
+                      "primary": "#ffb4aa",
+                      "surface-tint": "#ffb4aa",
+                      "on-tertiary-fixed": "#001d34",
+                      "error-container": "#93000a",
+                      "on-error": "#690005",
+                      "surface-elevated": "#1e1e1e",
+                      "surface-container-high": "#292a2a",
+                      "on-primary-fixed": "#410002",
+                      "status-success": "#22c55e",
+                      "surface-container": "#1f2020",
+                      "on-primary-container": "#fff8f7",
+                      "inverse-primary": "#c0000f",
+                      "surface-bright": "#383939",
+                      "on-primary": "#690004",
+                      "on-tertiary": "#003355",
+                      "on-surface": "#e3e2e2",
+                      "outline": "#ad8883",
+                      "on-surface-variant": "#e7bdb7",
+                      "outline-variant": "#5d3f3c",
+                      "tertiary-container": "#0077bf",
+                      "tertiary": "#9acbff",
+                      "surface-container-highest": "#343535",
+                      "status-warning": "#f59e0b",
+                      "primary-fixed-dim": "#ffb4aa",
+                      "on-secondary": "#303030",
+                      "inverse-on-surface": "#303031",
+                      "background": "#121414",
+                      "tertiary-fixed-dim": "#9acbff",
+                      "secondary-fixed-dim": "#c8c6c5",
+                      "status-error": "#ef4444",
+                      "primary-container": "#e02020",
+                      "primary-fixed": "#ffdad5",
+                      "surface-variant": "#343535",
+                      "surface-card": "#141414",
+                      "secondary-fixed": "#e5e2e1",
+                      "surface-container-lowest": "#0d0e0f",
+                      "on-tertiary-container": "#f7f9ff",
+                      "on-secondary-fixed-variant": "#474746",
+                      "secondary": "#c8c6c5",
+                      "on-secondary-container": "#b7b5b4",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-low": "#1b1c1c",
+                      "on-primary-fixed-variant": "#930009",
+                      "secondary-container": "#474746",
+                      "on-background": "#e3e2e2",
+                      "inverse-surface": "#e3e2e2",
+                      "text-inverse": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "space-md": "16px",
+                      "unit": "4px",
+                      "space-sm": "8px",
+                      "container-max": "1440px",
+                      "space-xs": "4px",
+                      "space-lg": "24px",
+                      "gutter": "16px",
+                      "space-xl": "48px"
+              },
+              "fontFamily": {
+                      "headline-xl-mobile": ["Hanken Grotesk"],
+                      "headline-md": ["Hanken Grotesk"],
+                      "headline-lg": ["Hanken Grotesk"],
+                      "data-mono": ["JetBrains Mono"],
+                      "body-md": ["Hanken Grotesk"],
+                      "body-lg": ["Hanken Grotesk"],
+                      "label-caps": ["JetBrains Mono"],
+                      "headline-xl": ["Hanken Grotesk"]
+              },
+              "fontSize": {
+                      "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                      "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                      "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                      "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                      "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                      "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                      "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                      "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-bg-base overflow-hidden">
+<!-- Main Modal Overlay -->
+<div class="fixed inset-0 z-50 flex flex-col bg-bg-base overflow-hidden">
+<!-- Header / TopAppBar (Derived from Shared Component Logic) -->
+<header class="flex justify-between items-center h-16 px-gutter border-b border-border-low bg-bg-base z-40">
+<div class="flex items-center gap-space-md">
+<button class="flex items-center justify-center p-2 hover:bg-surface-elevated transition-colors">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant">DELOVNI NALOG</span>
+<h1 class="font-headline-md text-headline-md text-primary-fixed uppercase tracking-tight">DN-2024-0842</h1>
+</div>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="flex items-center px-3 py-1 bg-surface-container rounded-lg border border-border-low">
+<span class="w-2 h-2 rounded-full bg-status-warning mr-2 animate-pulse"></span>
+<span class="font-label-caps text-label-caps text-on-surface">V DELU</span>
+</div>
+<button class="px-space-md py-2 border border-border-low font-label-caps text-label-caps hover:bg-surface-elevated transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">edit</span> UREDI
+                </button>
+<button class="px-space-md py-2 bg-primary-container text-on-primary-container font-label-caps text-label-caps hover:bg-[#ff2929] transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">check_circle</span> OZNAČI KOT KONČANO
+                </button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<main class="flex-1 overflow-y-auto custom-scrollbar p-gutter space-y-space-md max-w-7xl mx-auto w-full">
+<!-- Top Grid: Info & Vehicle -->
+<div class="grid grid-cols-12 gap-space-md">
+<!-- Project Summary Card -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-2 gap-space-md bg-surface-card border border-border-low p-space-lg">
+<div class="space-y-space-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant block">STRANKA &amp; PROJEKT</label>
+<p class="font-headline-lg text-headline-lg text-text-high">Industrija Avto d.o.o.</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Vzdrževanje flote vozil - Poletje 2024</p>
+</div>
+<div class="space-y-space-sm border-l border-border-low pl-space-lg">
+<label class="font-label-caps text-label-caps text-on-surface-variant block">ODGOVORNA OSEBA</label>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-surface-elevated flex items-center justify-center border border-border-low">
+<span class="material-symbols-outlined text-primary">person</span>
+</div>
+<div>
+<p class="font-body-lg text-body-lg text-text-high">Janez Novak</p>
+<p class="font-data-mono text-data-mono text-primary">+386 41 123 456</p>
+</div>
+</div>
+</div>
+<div class="col-span-2 grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-border-low">
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block">DATUM PREJEMA</label>
+<p class="font-data-mono text-data-mono text-text-high">12. 05. 2024</p>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block">ROK IZVEDBE</label>
+<p class="font-data-mono text-data-mono text-status-warning">18. 05. 2024</p>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block">PRIORITETA</label>
+<span class="px-2 py-0.5 bg-error-container text-on-error-container font-label-caps text-[10px] rounded">VISOKA</span>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block">LOKACIJA</label>
+<p class="font-body-md text-body-md text-text-high">Delavnica 2, Linija B</p>
+</div>
+</div>
+</div>
+<!-- Vehicle Data Card -->
+<div class="col-span-12 lg:col-span-4 bg-surface-card border border-border-low p-space-lg flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-space-md">
+<label class="font-label-caps text-label-caps text-on-surface-variant">PODATKI O VOZILU</label>
+<span class="material-symbols-outlined text-on-surface-variant">directions_car</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-text-high mb-1">MAN TGE 3.180</h2>
+<div class="space-y-1">
+<div class="flex justify-between">
+<span class="font-body-md text-on-surface-variant">Registrska št.</span>
+<span class="font-data-mono text-text-high">LJ VR-452</span>
+</div>
+<div class="flex justify-between">
+<span class="font-body-md text-on-surface-variant">Številka šasije (VIN)</span>
+<span class="font-data-mono text-text-high">WMAN0012398231</span>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-border-low">
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-2">CHECKLISTA POŠKODB</label>
+<div class="space-y-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-status-success text-[18px]">check_box</span>
+<span class="font-body-md text-on-surface">Praske na desnih vratih</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">check_box_outline_blank</span>
+<span class="font-body-md text-on-surface-variant">Poškodba vetrobranskega stekla</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Material Consumption Table -->
+<section class="bg-surface-card border border-border-low">
+<div class="p-space-md border-b border-border-low flex justify-between items-center">
+<h3 class="font-label-caps text-label-caps text-on-surface">PORABA MATERIALA</h3>
+<button class="text-primary font-label-caps text-label-caps hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">add</span> DODAJ ARTIKEL
+                    </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container text-on-surface-variant font-label-caps text-[11px] uppercase tracking-wider">
+<th class="p-4 border-b border-border-low">LOT ŠT.</th>
+<th class="p-4 border-b border-border-low">MATERIAL / STORITEV</th>
+<th class="p-4 border-b border-border-low text-right">KOLIČINA</th>
+<th class="p-4 border-b border-border-low text-right">CENA / ENOTO</th>
+<th class="p-4 border-b border-border-low text-right">SKUPAJ (BREZ DDV)</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-low">
+<tr class="hover:bg-surface-elevated transition-colors">
+<td class="p-4 font-data-mono text-data-mono text-on-surface-variant">LOT-2024-X1</td>
+<td class="p-4">
+<p class="font-body-md text-text-high font-semibold">Motorno olje Castrol Edge 5W-30</p>
+<p class="text-[12px] text-on-surface-variant">Sintetično olje za dizelske motorje</p>
+</td>
+<td class="p-4 text-right font-data-mono text-text-high">7.5 L</td>
+<td class="p-4 text-right font-data-mono text-text-high">18.50 €</td>
+<td class="p-4 text-right font-data-mono text-text-high font-bold">138.75 €</td>
+</tr>
+<tr class="hover:bg-surface-elevated transition-colors">
+<td class="p-4 font-data-mono text-data-mono text-on-surface-variant">LOT-2024-X8</td>
+<td class="p-4">
+<p class="font-body-md text-text-high font-semibold">Oljni filter Bosch P7092</p>
+<p class="text-[12px] text-on-surface-variant">Standardni nadomestni del</p>
+</td>
+<td class="p-4 text-right font-data-mono text-text-high">1.0 KOS</td>
+<td class="p-4 text-right font-data-mono text-text-high">24.00 €</td>
+<td class="p-4 text-right font-data-mono text-text-high font-bold">24.00 €</td>
+</tr>
+<tr class="hover:bg-surface-elevated transition-colors">
+<td class="p-4 font-data-mono text-data-mono text-on-surface-variant">-</td>
+<td class="p-4">
+<p class="font-body-md text-text-high font-semibold">Delovne ure - Servisni pregled</p>
+<p class="text-[12px] text-on-surface-variant">Mehanična dela (2.5h)</p>
+</td>
+<td class="p-4 text-right font-data-mono text-text-high">2.5 H</td>
+<td class="p-4 text-right font-data-mono text-text-high">45.00 €</td>
+<td class="p-4 text-right font-data-mono text-text-high font-bold">112.50 €</td>
+</tr>
+</tbody>
+<tfoot>
+<tr class="bg-surface-container-high">
+<td class="p-4 text-right font-label-caps text-label-caps text-on-surface-variant" colspan="4">SKUPAJ MATERIAL IN DELO</td>
+<td class="p-4 text-right font-data-mono text-headline-md text-primary">275.25 €</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</section>
+<!-- Evidence Gallery & Confirmation Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Evidence Gallery -->
+<section class="bg-surface-card border border-border-low p-space-md">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-label-caps text-label-caps text-on-surface">FOTO DOKAZILA (EVIDENCE)</h3>
+<span class="text-[12px] text-on-surface-variant">4 fotografije</span>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<div class="aspect-square bg-surface-elevated border border-border-low group relative cursor-pointer overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" data-alt="A detailed macro photograph of a damaged engine component within a dark, industrial mechanic workshop. The lighting is focused and dramatic, highlighting metallic textures and oil residues against a backdrop of deep shadows. The overall aesthetic is gritty, technical, and high-contrast, following the Venta Red and dark grey industrial theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5xRgpY2m13bTegKFqzAfte2qUzmZgYGNjyMSqcDW0Hkt3xbXCVV2TVoVQiQxiGuT32flgZ3qyufaxkefpkSx7ELlFZltR-edY4-Uq3moskUvYRXYnOIlzpUv-MK3CVieyOqpx6Y9kXhZPb2krXjC58sprQHJESzgzjVVGueHdaxE663VIsn2dJeYJj7RKuts3EUuS_2H_xzwM88vjFtxOPFYpMMV3ORW_S_qbGue8EBoHwQ87hj3S4RhZvvOYA3UEIvRQCUPrJQ"/>
+<div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-white">zoom_in</span>
+</div>
+</div>
+<div class="aspect-square bg-surface-elevated border border-border-low group relative cursor-pointer overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" data-alt="A photograph of a modern van's interior dashboard showing diagnostics equipment connected. The setting is a professional automotive repair bay with industrial tools visible in the peripheral. The lighting is sharp, creating a high-tech atmosphere with deep black shadows and subtle red glowing accents from the equipment screens, aligning with a premium industrial design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqMlXdHqyRtOgtn_Jhx5Dz4psOoxAg-RCKop42Dyj-dq7z8oAjG9YDErjaG4RxWtEWDXpcMCp6x8cS-qs_54jVp01Npo-p_gSACwM-DnVsp-Ot7aUB-sva0wBSSHxSg7jcJsK1Kq_-WHK0S41F7kAA31g95q0B5Y3SNu592frQ-gYBpcMKN2_C1P_PPJhTBfkYG6VBTgsvUOSVyQSUeEIH8g3ROITY0F3dtROxXfqOpwv8EWBO2zhf6SfQF179hLsqPCeYJ0n_PA"/>
+<div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-white">zoom_in</span>
+</div>
+</div>
+<div class="aspect-square bg-surface-elevated border border-border-low group relative cursor-pointer overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" data-alt="Close-up shot of a mechanic's hands in black nitrile gloves working on a car brake system. The image uses a shallow depth of field, emphasizing the precision of the work. The environment is dark and moody, punctuated by a single directional light source that makes the metallic surfaces gleam with industrial authority, maintaining the Venta brand colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuArzzCcL10RdqufoBGAWfF32ZG_8anubM98x7PF7RSR41Bo_YG9FKFrXnp4BYHqHsktkesK1Gs6Fs7mt1jsWJQzPFmEdmSWmPqBIGGEJFScARu8c_8oyhnvZFSaSnIMdrBol1ljSPdFPV97_-0mH5cCsZUZDR1G-rlQT_GSnocCyZpMNUS1U_DcddqHG14DAbDOO5pI7aYl1MuA9Iw5KOi-ggXjjUgWyKexTCiwGgc3WtDY1ZdamNHTLy28e_FprbWZz-l9wpdGBw"/>
+<div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-white">zoom_in</span>
+</div>
+</div>
+<button class="aspect-square bg-surface-elevated border border-dashed border-border-low flex flex-col items-center justify-center hover:bg-surface-container-high transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">add_a_photo</span>
+<span class="text-[10px] mt-1 font-label-caps">DODAJ</span>
+</button>
+</div>
+</section>
+<!-- Confirm with Price Section -->
+<section class="bg-surface-card border border-primary/30 p-space-md flex flex-col justify-between">
+<div>
+<h3 class="font-label-caps text-label-caps text-primary mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">payments</span> POTRDITEV Z OBRAČUNOM
+                        </h3>
+<div class="grid grid-cols-2 gap-space-md">
+<div class="space-y-1">
+<label class="font-label-caps text-[11px] text-on-surface-variant uppercase">NETO ZNESEK (€)</label>
+<input class="w-full bg-surface-elevated border border-border-low text-text-high font-data-mono px-3 py-2 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all" type="text" value="275.25"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-caps text-[11px] text-on-surface-variant uppercase">DDV STOPNJA (%)</label>
+<select class="w-full bg-surface-elevated border border-border-low text-text-high font-data-mono px-3 py-2 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all">
+<option>22%</option>
+<option>9.5%</option>
+<option>0%</option>
+</select>
+</div>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between border-t border-border-low pt-4">
+<div>
+<span class="font-label-caps text-label-caps text-on-surface-variant block">SKUPAJ ZA PLAČILO</span>
+<span class="font-headline-lg text-headline-lg text-text-high">335.81 €</span>
+</div>
+<button class="bg-primary-container text-on-primary-container px-space-lg py-3 font-label-caps text-label-caps hover:bg-[#ff2929] transition-all transform active:scale-95 shadow-lg shadow-primary/20">
+                            POTRDI IN POŠLJI RAČUN
+                        </button>
+</div>
+</section>
+</div>
+<!-- Notes Section -->
+<section class="bg-surface-card border border-border-low p-space-md">
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-2 uppercase">Opombe in komentarji izvajalca</label>
+<textarea class="w-full bg-surface-elevated border border-border-low text-on-surface font-body-md p-3 focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Vnesite dodatne informacije o opravljenem delu..." rows="3"></textarea>
+</section>
+</main>
+<!-- Footer Footer -->
+<footer class="h-12 bg-surface-container border-t border-border-low px-gutter flex items-center justify-between text-on-surface-variant font-data-mono text-[12px]">
+<div class="flex gap-space-lg">
+<span>ZADNJI POPRAVEK: 13.05.2024 14:22 (Uporabnik: Marko K.)</span>
+<span>ID: WO-842-XF-2024</span>
+</div>
+<div class="flex items-center gap-space-md">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-status-success"></span> Sinhronizirano</span>
+<span class="material-symbols-outlined text-[16px]">print</span>
+<span class="material-symbols-outlined text-[16px]">share</span>
+</div>
+</footer>
+</div>
+<!-- Background Decoration / Subtle Glows -->
+<div class="fixed top-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[150px] -z-10 rounded-full"></div>
+<div class="fixed bottom-0 left-0 w-[300px] h-[300px] bg-tertiary/5 blur-[100px] -z-10 rounded-full"></div>
+<script>
+        // Simple Interaction Logic
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mousedown', () => {
+                btn.style.transform = 'scale(0.98)';
+            });
+            btn.addEventListener('mouseup', () => {
+                btn.style.transform = 'scale(1)';
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = 'scale(1)';
+            });
+        });
+
+        // Price Calculation Mockup
+        const netoInput = document.querySelector('input[type="text"]');
+        const ddvSelect = document.querySelector('select');
+        const totalDisplay = document.querySelector('.font-headline-lg.text-text-high');
+
+        function updatePrice() {
+            const neto = parseFloat(netoInput.value) || 0;
+            const ddv = parseFloat(ddvSelect.value) / 100;
+            const total = neto * (1 + ddv);
+            totalDisplay.textContent = total.toFixed(2) + ' €';
+        }
+
+        netoInput.addEventListener('input', updatePrice);
+        ddvSelect.addEventListener('change', updatePrice);
+    </script>
+</body></html>

@@ -9,188 +9,33 @@ datasource db {
 }
 
 model Produkt {
-  id             Int       @id @default(autoincrement())
-  koda           String
+  id             Int      @id @default(autoincrement())
+  koda           String   @unique
   naziv_produkta String
-  prodajna_cena  Float
-  nabavna_cena   Float
   tip            String
   sirina         Float?
+  nabavna_cena   Float
+  prodajna_cena  Float
   dobavitelj     String?
+  created_at     DateTime @default(now())
+
   lotProdukti    LotProdukt[]
   nakupPostavke  NakupPostavka[]
 }
 
 model LotProdukt {
-  id              BigInt    @id
+  id              Int       @id @default(autoincrement())
   produkt_id      Int
-  lot_stevilka    String
+  lot_stevilka    String?
   kolicina_tm     Float
-  kolicina_m2     Float?
   nabavna_cena    Float
   prodajna_cena   Float
-  datum_prevzema  DateTime
-  potrjeno        Boolean   @default(false)
-  dobavitelj      String?
-  stevilka_racuna String?
-  
-  produkt         Produkt   @relation(fields: [produkt_id], references: [id])
-  evidencaZaloge  EvidencaZaloge[]
-  plakatiMateriali DelovnaNalogaPlakatiMaterial[]
-  avtiMateriali    DelovnaNalogaAvtiMaterial[]
-}
+  datum_prevzema  DateTime  @default(now())
+  created_at      DateTime  @default(now())
 
-model EvidencaZaloge {
-  id              String    @id
-  datum           DateTime
-  lot_produkt_id  BigInt
-  naziv_produkta  String
-  tip             String
-  stevilka_racuna String?
-  nabavna_cena    Float
-  prodajna_cena   Float?
-  popust          Float     @default(0)
-  dobavitelj      String?
-  kolicina_tm     Float
-  znesek          Float
-  ddv_stopnja     Float?
-  znesek_z_ddv    Float?
-  datum_placila   DateTime?
-
-  lotProdukt      LotProdukt @relation(fields: [lot_produkt_id], references: [id])
-}
-
-model Narocnik {
-  id             BigInt   @id @default(autoincrement())
-  ime_narocnika  String
-  gsm_stevilka   String?
-  email_narocnika String?
-  nalogePlakati  DelovnaNalogaPlakati[]
-}
-
-model DelovnaNalogaPlakati {
-  id               BigInt    @id
-  status           String
-  naziv_projekta   String
-  opis             String?
-  opomba           String?
-  stevilka_delovnega_naloga String?
-  stevilka_racuna   String?
-  enota_materiala   String   @default("tm")
-  narocnik_id      BigInt
-  cena_dela        Float?
-  cena_materiala   Float
-  datum            DateTime
-
-  narocnik         Narocnik @relation(fields: [narocnik_id], references: [id])
-  slike            DelovnaNalogaPlakatiSlika[]
-  materiali        DelovnaNalogaPlakatiMaterial[]
-}
-
-model DelovnaNalogaPlakatiSlika {
-  id                       BigInt  @id @default(autoincrement())
-  delovna_naloga_plakati_id BigInt
-  url                      String
-
-  naloga                   DelovnaNalogaPlakati @relation(fields: [delovna_naloga_plakati_id], references: [id])
-}
-
-model DelovnaNalogaPlakatiMaterial {
-  id                       BigInt  @id @default(autoincrement())
-  delovna_naloga_plakati_id BigInt
-  lot_produkt_id           BigInt
-  kolicina_uporabljenega_produkta Float
-
-  naloga                   DelovnaNalogaPlakati @relation(fields: [delovna_naloga_plakati_id], references: [id])
-  lotProdukt               LotProdukt @relation(fields: [lot_produkt_id], references: [id])
-}
-
-model Vozilo {
-  id                 BigInt  @id @default(autoincrement())
-  registrska_stevilka String?
-  stevilka_sasije     String
-  znamka_vozila       String
-  nalogeAvti          DelovnaNalogaAvti[]
-}
-
-model LastnikVozila {
-  id             BigInt @id @default(autoincrement())
-  ime_lastnika   String
-  email_lastnika String?
-  nalogeAvti     DelovnaNalogaAvti[]
-}
-
-model DelovnaNalogaAvti {
-  id                  BigInt    @id
-  status              String
-  opravljena_storitev String
-  opis                String?
-  opomba              String?
-  stevilka_delovnega_naloga String?
-  stevilka_racuna      String?
-  enota_materiala      String   @default("tm")
-  vozilo_id           BigInt
-  lastnik_vozila_id   BigInt
-  cena_dela           Float?
-  cena_materiala      Float
-  datum               DateTime
-
-  vozilo              Vozilo @relation(fields: [vozilo_id], references: [id])
-  lastnik_vozila      LastnikVozila @relation(fields: [lastnik_vozila_id], references: [id])
-  slike               DelovnaNalogaAvtiSlika[]
-  materiali           DelovnaNalogaAvtiMaterial[]
-  poskodbe            DelovnaNalogaAvtiPoskodba[]
-}
-
-model DelovnaNalogaAvtiSlika {
-  id                    BigInt  @id @default(autoincrement())
-  delovna_naloga_avti_id BigInt
-  url                   String
-
-  naloga                DelovnaNalogaAvti @relation(fields: [delovna_naloga_avti_id], references: [id])
-}
-
-model DelovnaNalogaAvtiMaterial {
-  id                    BigInt  @id @default(autoincrement())
-  delovna_naloga_avti_id BigInt
-  lot_produkt_id        BigInt
-  kolicina_uporabljenega_produkta Float
-
-  naloga                DelovnaNalogaAvti @relation(fields: [delovna_naloga_avti_id], references: [id])
-  lotProdukt            LotProdukt @relation(fields: [lot_produkt_id], references: [id])
-}
-
-model DelovnaNalogaAvtiPoskodba {
-  id                    BigInt @id @default(autoincrement())
-  delovna_naloga_avti_id BigInt
-  opis                  String
-
-  naloga                DelovnaNalogaAvti @relation(fields: [delovna_naloga_avti_id], references: [id])
-}
-
-model OstaliNakup {
-  id              Int       @id @default(autoincrement())
-  datum           DateTime
-  datum_placila   DateTime?
-  opis            String
-  dobavitelj      String
-  podrobnosti     String
-  znesek          Float
-  ddv_stopnja     Float?
-  znesek_z_ddv    Float?
-  stevilka_racuna String?
-}
-
-model PrihodekManual {
-  id              BigInt   @id @default(autoincrement())
-  datum           DateTime
-  datum_placila   DateTime?
-  opis            String
-  narocnik        String?
-  znesek          Float
-  ddv_stopnja     Float?
-  znesek_z_ddv    Float?
-  stevilka_racuna String?
+  produkt         Produkt       @relation(fields: [produkt_id], references: [id])
+  nakupPostavka   NakupPostavka? @relation("LotFromPostavka")
+  materialiNalog  DelovnaNalogaMaterial[]
 }
 
 model Nakup {
@@ -200,21 +45,99 @@ model Nakup {
   stevilka_racuna String
   neto_znesek     Float
   bruto_znesek    Float
-  createdAt       DateTime  @default(now())
+  created_at      DateTime  @default(now())
 
   postavke        NakupPostavka[]
 }
 
 model NakupPostavka {
-  id          Int       @id @default(autoincrement())
-  nakup_id    Int
-  kategorija  String
-  opis        String
-  neto_cena   Float
-  ddv         Float
-  bruto_cena  Float
-  produkt_id  Int?
+  id              Int       @id @default(autoincrement())
+  nakup_id        Int
+  kategorija      String
+  opis            String
+  neto_cena       Float
+  ddv             Float
+  bruto_cena      Float
+  produkt_id      Int?
+  lot_stevilka    String?
+  kolicina_tm     Float?
+  kolicina_m2     Float?
+  lot_produkt_id  Int?      @unique
 
-  nakup       Nakup     @relation(fields: [nakup_id], references: [id])
-  produkt     Produkt?  @relation(fields: [produkt_id], references: [id])
+  nakup           Nakup       @relation(fields: [nakup_id], references: [id], onDelete: Cascade)
+  produkt         Produkt?    @relation(fields: [produkt_id], references: [id])
+  lotProdukt      LotProdukt? @relation("LotFromPostavka", fields: [lot_produkt_id], references: [id])
+}
+
+model DelovnaNaloga {
+  id                        Int       @id @default(autoincrement())
+  tip                       String
+  stevilka_delovnega_naloga String
+  naziv_projekta            String
+  status                    String    @default("v_izdelavi")
+  stevilka_racuna           String?
+  opis                      String?
+  opomba                    String?
+  kontakt_ime               String
+  kontakt_gsm               String?
+  kontakt_email             String?
+  cena_dela_neto            Float?
+  ddv_stopnja               Float?    @default(22)
+  cena_dela_bruto           Float?
+  cena_materiala            Float     @default(0)
+  datum                     DateTime  @default(now())
+  created_at                DateTime  @default(now())
+
+  vozilo                    Vozilo?
+  poskodbe                  DelovnaNalogaPoskodba[]
+  materiali                 DelovnaNalogaMaterial[]
+  slike                     DelovnaNalogaSlika[]
+}
+
+model Vozilo {
+  id                  Int           @id @default(autoincrement())
+  delovna_naloga_id   Int           @unique
+  registrska_stevilka String?
+  stevilka_sasije     String
+  znamka_vozila       String
+
+  naloga              DelovnaNaloga @relation(fields: [delovna_naloga_id], references: [id], onDelete: Cascade)
+}
+
+model DelovnaNalogaPoskodba {
+  id                Int           @id @default(autoincrement())
+  delovna_naloga_id Int
+  opis              String
+
+  naloga            DelovnaNaloga @relation(fields: [delovna_naloga_id], references: [id], onDelete: Cascade)
+}
+
+model DelovnaNalogaMaterial {
+  id                Int           @id @default(autoincrement())
+  delovna_naloga_id Int
+  lot_produkt_id    Int
+  kolicina_tm       Float
+
+  naloga            DelovnaNaloga @relation(fields: [delovna_naloga_id], references: [id], onDelete: Cascade)
+  lotProdukt        LotProdukt    @relation(fields: [lot_produkt_id], references: [id])
+}
+
+model DelovnaNalogaSlika {
+  id                Int           @id @default(autoincrement())
+  delovna_naloga_id Int
+  url               String
+
+  naloga            DelovnaNaloga @relation(fields: [delovna_naloga_id], references: [id], onDelete: Cascade)
+}
+
+model PrihodekManual {
+  id              Int       @id @default(autoincrement())
+  datum           DateTime
+  opis            String
+  narocnik        String?
+  stevilka_racuna String?
+  neto_znesek     Float
+  ddv             Float
+  bruto_znesek    Float
+  created_at      DateTime  @default(now())
 }
