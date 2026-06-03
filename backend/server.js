@@ -90,6 +90,10 @@ async function auth(req, res, next) {
       .select("id, username, role")
       .eq("id", userData.user.id)
       .single();
+      
+    console.log("User ID iz tokena:", userData.user.id);
+    console.log("Profile result:", profile);
+    console.log("Profile error:", JSON.stringify(profileError));
 
     if (profileError || !profile) return res.status(401).json({ message: "Profil uporabnika ne obstaja." });
     req.user = profile;

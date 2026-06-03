@@ -1,4 +1,4 @@
-import React from "react";
+{/*import React from "react";
 
 export const RoleContext = React.createContext("admin");
 
@@ -14,4 +14,4 @@ export const USERS = [
   { username: "racunovodkinja", role: "racunovodkinja" },
   { username: "barbara", role: "admin" },
   { username: "grega", role: "grega" }
-];
+];*/}
