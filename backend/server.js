@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { PrismaClient } = require("@prisma/client");
@@ -470,8 +470,8 @@ app.get("/api/analiza/prodaja", permit("admin"), async (req, res) => {
     prisma.prihodekManual.findMany({ orderBy: { datum: "desc" } })
   ]);
   res.json([
-    ...naloge.map((n) => ({ tip: "delovna_naloga", ...sanitizeNaloga(n), neto_znesek: Number(n.cena_dela_neto || 0) + Number(n.cena_materiala || 0), bruto_znesek: Number(n.cena_dela_bruto || 0) + Number(n.cena_materiala || 0) })),
-    ...prihodki.map((p) => ({ tip: "drugo", ...p }))
+    ...naloge.map((n) => ({ ...sanitizeNaloga(n), izvor_tip: "delovna_naloga", neto_znesek: Number(n.cena_dela_neto || 0) + Number(n.cena_materiala || 0), bruto_znesek: Number(n.cena_dela_bruto || 0) + Number(n.cena_materiala || 0) })),
+    ...prihodki.map((p) => ({ ...p, izvor_tip: "drugo" }))
   ].sort((a, b) => new Date(b.datum) - new Date(a.datum)));
 });
 
