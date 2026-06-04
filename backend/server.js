@@ -468,4 +468,4 @@ app.get("/api/analiza/prodaja", permit("admin"), async (req, res) => {
 app.use((err, req, res, next) => res.status(500).json({ message: err.message }));
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Venta Design API teče na http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Venta Design API teče na http://localhost:${PORT}`));
