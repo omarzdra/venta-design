@@ -274,12 +274,15 @@ export default function App() {
     try {
       if (session) {
         await loadUser();
-        await loadData();
+        await loadData().catch((e) => {
+          // Napaka pri nalaganju podatkov ne sme odjaviti userja
+          notify(e.message, "error");
+        });
       } else {
         setUser(null);
       }
     } catch (e) {
-      if (!String(e.message).toLowerCase().includes("token")) notify(e.message, "error");
+      // Sem pride samo če loadUser() ne uspe (auth napaka)
       setUser(null);
     } finally {
       setLoading(false);
