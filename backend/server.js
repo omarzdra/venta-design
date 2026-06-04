@@ -13,7 +13,12 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const allowDevAuth = process.env.DEV_AUTH_BYPASS === "true";
 const supabase = supabaseUrl && serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } }) : null;
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://venta-design-o22t.vercel.app",
+    "http://localhost:5173"
+  ]
+}));
 app.use(express.json({ limit: "15mb" }));
 
 const DDV = [0, 9.5, 22];
@@ -90,7 +95,7 @@ async function auth(req, res, next) {
       .select("id, username, role")
       .eq("id", userData.user.id)
       .single();
-      
+
     console.log("User ID iz tokena:", userData.user.id);
     console.log("Profile result:", profile);
     console.log("Profile error:", JSON.stringify(profileError));
