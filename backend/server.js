@@ -6,6 +6,15 @@ const { createClient } = require("@supabase/supabase-js");
 
 dotenv.config();
 
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION:', err);
+});
+
 const app = express();
 const prisma = new PrismaClient();
 const supabaseUrl = process.env.SUPABASE_URL;
