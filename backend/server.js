@@ -19,11 +19,18 @@ const app = express();
 const prisma = new PrismaClient();
 const supabaseUrl = process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const allowDevAuth = process.env.DEV_AUTH_BYPASS === "true";
+const allowDevAuth = process.env.NODE_ENV !== "production" && process.env.DEV_AUTH_BYPASS === "true";
+const allowedOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 const supabase = supabaseUrl && serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } }) : null;
 
 app.use(cors({
-  origin: "*",
+  origin: (origin, callback) => {
+    if (!origin || !allowedOrigins.length || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("CORS origin ni dovoljen."));
+  },
   credentials: false,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
@@ -41,6 +48,30 @@ function toNumber(value, fallback = null) {
   if (value === null || value === undefined || value === "") return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function moneyInput(value, fallback = null) {
+  const parsed = toNumber(value, fallback);
+  if (parsed === null || parsed === undefined) return parsed;
+  return parsed.toFixed(2);
+}
+
+function dateOnly(value) {
+  const date = new Date(`${String(value).slice(0, 10)}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) throw new Error("Neveljaven datum.");
+  return date;
+}
+
+function dateRangeWhere(from, to) {
+  if (!from && !to) return {};
+  const range = {};
+  if (from) range.gte = dateOnly(from);
+  if (to) {
+    const end = dateOnly(to);
+    end.setUTCDate(end.getUTCDate() + 1);
+    range.lt = end;
+  }
+  return { datum: range };
 }
 
 function requireFields(body, fields) {
@@ -106,10 +137,6 @@ async function auth(req, res, next) {
       .eq("id", userData.user.id)
       .single();
 
-    console.log("User ID iz tokena:", userData.user.id);
-    console.log("Profile result:", profile);
-    console.log("Profile error:", JSON.stringify(profileError));
-
     if (profileError || !profile) return res.status(401).json({ message: "Profil uporabnika ne obstaja." });
     req.user = profile;
     next();
@@ -144,8 +171,8 @@ app.post("/api/produkti", permit("admin"), async (req, res) => {
         naziv_produkta: String(req.body.naziv_produkta).trim(),
         tip: req.body.tip,
         sirina: req.body.tip === "adr" ? null : toNumber(req.body.sirina),
-        nabavna_cena: toNumber(req.body.nabavna_cena, 0),
-        prodajna_cena: toNumber(req.body.prodajna_cena, 0),
+        nabavna_cena: moneyInput(req.body.nabavna_cena, 0),
+        prodajna_cena: moneyInput(req.body.prodajna_cena, 0),
         dobavitelj: req.body.dobavitelj || null
       }
     });
@@ -195,7 +222,7 @@ app.get("/api/nakupi", permit("admin"), async (req, res) => {
   const { dobavitelj, kategorija, datum_od, datum_do, znesek_od, znesek_do } = req.query;
   const where = {};
   if (dobavitelj) where.dobavitelj = { contains: String(dobavitelj), mode: "insensitive" };
-  if (datum_od || datum_do) where.datum = { ...(datum_od ? { gte: new Date(datum_od) } : {}), ...(datum_do ? { lte: new Date(datum_do) } : {}) };
+  Object.assign(where, dateRangeWhere(datum_od, datum_do));
   if (znesek_od || znesek_do) where.neto_znesek = { ...(znesek_od ? { gte: Number(znesek_od) } : {}), ...(znesek_do ? { lte: Number(znesek_do) } : {}) };
   if (kategorija) where.postavke = { some: { kategorija: { in: String(kategorija).split(",") } } };
   const nakupi = await prisma.nakup.findMany({ where, include: { postavke: { include: { produkt: true, lotProdukt: true } } }, orderBy: { datum: "desc" } });
@@ -236,11 +263,11 @@ app.post("/api/nakupi", permit("admin"), async (req, res) => {
 
       const nakup = await tx.nakup.create({
         data: {
-          datum: new Date(req.body.datum),
+          datum: dateOnly(req.body.datum),
           dobavitelj: String(req.body.dobavitelj).trim(),
           stevilka_racuna: String(req.body.stevilka_racuna).trim(),
-          neto_znesek: prepared.reduce((s, x) => s + x.neto, 0),
-          bruto_znesek: prepared.reduce((s, x) => s + x.bruto, 0)
+          neto_znesek: moneyInput(prepared.reduce((s, x) => s + x.neto, 0), 0),
+          bruto_znesek: moneyInput(prepared.reduce((s, x) => s + x.bruto, 0), 0)
         }
       });
 
@@ -253,9 +280,9 @@ app.post("/api/nakupi", permit("admin"), async (req, res) => {
               produkt_id: x.produkt.id,
               lot_stevilka: x.p.lot_stevilka || null,
               kolicina_tm: Number(x.kolicina_tm),
-              nabavna_cena: qtyForPrice > 0 ? x.neto / qtyForPrice : x.produkt.nabavna_cena,
-              prodajna_cena: x.produkt.prodajna_cena,
-              datum_prevzema: new Date(req.body.datum)
+              nabavna_cena: moneyInput(qtyForPrice > 0 ? x.neto / qtyForPrice : x.produkt.nabavna_cena, 0),
+              prodajna_cena: moneyInput(x.produkt.prodajna_cena, 0),
+              datum_prevzema: dateOnly(req.body.datum)
             }
           });
           lotId = lot.id;
@@ -265,9 +292,9 @@ app.post("/api/nakupi", permit("admin"), async (req, res) => {
             nakup_id: nakup.id,
             kategorija: x.p.kategorija,
             opis: x.p.kategorija === "material" ? x.produkt.naziv_produkta : String(x.p.opis || ""),
-            neto_cena: x.neto,
+            neto_cena: moneyInput(x.neto, 0),
             ddv: x.ddv,
-            bruto_cena: x.bruto,
+            bruto_cena: moneyInput(x.bruto, 0),
             produkt_id: x.produkt?.id || null,
             lot_stevilka: x.p.lot_stevilka || null,
             kolicina_tm: x.kolicina_tm,
@@ -298,14 +325,17 @@ async function syncNalogaMaterials(tx, nalogaId, nextMaterials) {
     if (qty <= 0) continue;
     const lot = await tx.lotProdukt.findUnique({ where: { id: lotId } });
     if (!lot) throw new Error("Izbran LOT ne obstaja.");
-    if (Number(lot.kolicina_tm) < qty) throw new Error(`Premalo zaloge za LOT ${lot.lot_stevilka || "/"}.`);
-    await tx.lotProdukt.update({ where: { id: lotId }, data: { kolicina_tm: { decrement: qty } } });
+    const deducted = await tx.lotProdukt.updateMany({
+      where: { id: lotId, kolicina_tm: { gte: qty } },
+      data: { kolicina_tm: { decrement: qty } }
+    });
+    if (deducted.count !== 1) throw new Error(`Premalo zaloge za LOT ${lot.lot_stevilka || "/"}.`);
     await tx.delovnaNalogaMaterial.create({ data: { delovna_naloga_id: nalogaId, lot_produkt_id: lotId, kolicina_tm: qty } });
   }
 
   const materials = await tx.delovnaNalogaMaterial.findMany({ where: { delovna_naloga_id: nalogaId }, include: { lotProdukt: { include: { produkt: true } } } });
   const cena_materiala = materials.reduce((sum, material) => sum + calcMaterialValue(material), 0);
-  await tx.delovnaNaloga.update({ where: { id: nalogaId }, data: { cena_materiala } });
+  await tx.delovnaNaloga.update({ where: { id: nalogaId }, data: { cena_materiala: moneyInput(cena_materiala, 0) } });
 }
 
 function nalogaPayload(body, isCreate = false, current = null, role = "admin") {
@@ -337,7 +367,7 @@ app.get("/api/naloge", permit("admin", "grega"), async (req, res) => {
   if (!tip) return res.status(400).json({ message: "Query tip je obvezen." });
   const where = { tip: String(tip) };
   if (status) where.status = String(status);
-  if (datum_od || datum_do) where.datum = { ...(datum_od ? { gte: new Date(datum_od) } : {}), ...(datum_do ? { lte: new Date(datum_do) } : {}) };
+  Object.assign(where, dateRangeWhere(datum_od, datum_do));
   if (search) {
     const q = String(search);
     where.OR = [
@@ -402,8 +432,16 @@ app.put("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
 });
 
 app.patch("/api/naloge/:id/dokoncaj", permit("admin"), async (req, res) => {
-  const updated = await prisma.delovnaNaloga.update({ where: { id: Number(req.params.id) }, data: { status: "dokoncana" }, include: includeNaloga() });
-  res.json(sanitizeNaloga(updated));
+  try {
+    const id = Number(req.params.id);
+    const current = await prisma.delovnaNaloga.findUnique({ where: { id } });
+    if (!current) return res.status(404).json({ message: "Naloga ne obstaja." });
+    if (STATUS_RANK[current.status] > STATUS_RANK.dokoncana) throw new Error("Potrjene naloge ni dovoljeno vračati nazaj.");
+    const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "dokoncana" }, include: includeNaloga() });
+    res.json(sanitizeNaloga(updated));
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 });
 
 app.patch("/api/naloge/:id/potrdi", permit("admin"), async (req, res) => {
@@ -416,7 +454,7 @@ app.patch("/api/naloge/:id/potrdi", permit("admin"), async (req, res) => {
     const cena = toNumber(req.body.cena_dela_neto);
     if (!cena || cena <= 0) throw new Error("Vnesi ceno dela.");
     const ddv = assertDdv(req.body.ddv_stopnja ?? 22);
-    const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "potrjena", cena_dela_neto: cena, ddv_stopnja: ddv, cena_dela_bruto: cena * (1 + ddv / 100) }, include: includeNaloga() });
+    const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "potrjena", cena_dela_neto: moneyInput(cena, 0), ddv_stopnja: ddv, cena_dela_bruto: moneyInput(cena * (1 + ddv / 100), 0) }, include: includeNaloga() });
     res.json(sanitizeNaloga(updated));
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -427,7 +465,7 @@ app.get("/api/prihodki", permit("admin"), async (req, res) => {
   const { narocnik, datum_od, datum_do, znesek_od, znesek_do } = req.query;
   const where = {};
   if (narocnik) where.narocnik = { contains: String(narocnik), mode: "insensitive" };
-  if (datum_od || datum_do) where.datum = { ...(datum_od ? { gte: new Date(datum_od) } : {}), ...(datum_do ? { lte: new Date(datum_do) } : {}) };
+  Object.assign(where, dateRangeWhere(datum_od, datum_do));
   if (znesek_od || znesek_do) where.neto_znesek = { ...(znesek_od ? { gte: Number(znesek_od) } : {}), ...(znesek_do ? { lte: Number(znesek_do) } : {}) };
   res.json(await prisma.prihodekManual.findMany({ where, orderBy: { datum: "desc" } }));
 });
@@ -443,7 +481,7 @@ app.post("/api/prihodki", permit("admin"), async (req, res) => {
     requireFields(req.body, ["datum", "opis", "neto_znesek"]);
     const ddv = assertDdv(req.body.ddv);
     const neto = toNumber(req.body.neto_znesek, 0);
-    const prihodek = await prisma.prihodekManual.create({ data: { datum: new Date(req.body.datum), opis: req.body.opis, narocnik: req.body.narocnik || null, stevilka_racuna: req.body.stevilka_racuna || null, neto_znesek: neto, ddv, bruto_znesek: neto * (1 + ddv / 100) } });
+    const prihodek = await prisma.prihodekManual.create({ data: { datum: dateOnly(req.body.datum), opis: req.body.opis, narocnik: req.body.narocnik || null, stevilka_racuna: req.body.stevilka_racuna || null, neto_znesek: moneyInput(neto, 0), ddv, bruto_znesek: moneyInput(neto * (1 + ddv / 100), 0) } });
     res.status(201).json(prihodek);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -451,7 +489,7 @@ app.post("/api/prihodki", permit("admin"), async (req, res) => {
 });
 
 app.get("/api/analiza/summary", permit("admin"), async (req, res) => {
-  const dateWhere = req.query.datum_od || req.query.datum_do ? { datum: { ...(req.query.datum_od ? { gte: new Date(req.query.datum_od) } : {}), ...(req.query.datum_do ? { lte: new Date(req.query.datum_do) } : {}) } } : {};
+  const dateWhere = dateRangeWhere(req.query.datum_od, req.query.datum_do);
   const [naloge, prihodki, nakupi] = await Promise.all([
     prisma.delovnaNaloga.findMany({ where: { status: "potrjena", ...dateWhere } }),
     prisma.prihodekManual.findMany({ where: dateWhere }),
@@ -465,9 +503,10 @@ app.get("/api/analiza/summary", permit("admin"), async (req, res) => {
 });
 
 app.get("/api/analiza/prodaja", permit("admin"), async (req, res) => {
+  const dateWhere = dateRangeWhere(req.query.datum_od, req.query.datum_do);
   const [naloge, prihodki] = await Promise.all([
-    prisma.delovnaNaloga.findMany({ where: { status: "potrjena" }, include: includeNaloga(), orderBy: { datum: "desc" } }),
-    prisma.prihodekManual.findMany({ orderBy: { datum: "desc" } })
+    prisma.delovnaNaloga.findMany({ where: { status: "potrjena", ...dateWhere }, include: includeNaloga(), orderBy: { datum: "desc" } }),
+    prisma.prihodekManual.findMany({ where: dateWhere, orderBy: { datum: "desc" } })
   ]);
   res.json([
     ...naloge.map((n) => ({ ...sanitizeNaloga(n), izvor_tip: "delovna_naloga", neto_znesek: Number(n.cena_dela_neto || 0) + Number(n.cena_materiala || 0), bruto_znesek: Number(n.cena_dela_bruto || 0) + Number(n.cena_materiala || 0) })),

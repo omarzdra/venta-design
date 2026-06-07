@@ -15,8 +15,8 @@ model Produkt {
   naziv_produkta String
   tip            String
   sirina         Float?
-  nabavna_cena   Float
-  prodajna_cena  Float
+  nabavna_cena   Decimal  @db.Decimal(12, 2)
+  prodajna_cena  Decimal  @db.Decimal(12, 2)
   dobavitelj     String?
   created_at     DateTime @default(now())
 
@@ -29,8 +29,8 @@ model LotProdukt {
   produkt_id      Int
   lot_stevilka    String?
   kolicina_tm     Float
-  nabavna_cena    Float
-  prodajna_cena   Float
+  nabavna_cena    Decimal   @db.Decimal(12, 2)
+  prodajna_cena   Decimal   @db.Decimal(12, 2)
   datum_prevzema  DateTime  @default(now())
   created_at      DateTime  @default(now())
 
@@ -44,8 +44,8 @@ model Nakup {
   datum           DateTime
   dobavitelj      String
   stevilka_racuna String
-  neto_znesek     Float
-  bruto_znesek    Float
+  neto_znesek     Decimal   @db.Decimal(12, 2)
+  bruto_znesek    Decimal   @db.Decimal(12, 2)
   created_at      DateTime  @default(now())
 
   postavke        NakupPostavka[]
@@ -56,9 +56,9 @@ model NakupPostavka {
   nakup_id        Int
   kategorija      String
   opis            String
-  neto_cena       Float
+  neto_cena       Decimal   @db.Decimal(12, 2)
   ddv             Float
-  bruto_cena      Float
+  bruto_cena      Decimal   @db.Decimal(12, 2)
   produkt_id      Int?
   lot_stevilka    String?
   kolicina_tm     Float?
@@ -82,10 +82,10 @@ model DelovnaNaloga {
   kontakt_ime               String
   kontakt_gsm               String?
   kontakt_email             String?
-  cena_dela_neto            Float?
+  cena_dela_neto            Decimal?  @db.Decimal(12, 2)
   ddv_stopnja               Float?    @default(22)
-  cena_dela_bruto           Float?
-  cena_materiala            Float     @default(0)
+  cena_dela_bruto           Decimal?  @db.Decimal(12, 2)
+  cena_materiala            Decimal   @default(0) @db.Decimal(12, 2)
   datum                     DateTime  @default(now())
   created_at                DateTime  @default(now())
 
@@ -137,8 +137,8 @@ model PrihodekManual {
   opis            String
   narocnik        String?
   stevilka_racuna String?
-  neto_znesek     Float
+  neto_znesek     Decimal   @db.Decimal(12, 2)
   ddv             Float
-  bruto_znesek    Float
+  bruto_znesek    Decimal   @db.Decimal(12, 2)
   created_at      DateTime  @default(now())
 }

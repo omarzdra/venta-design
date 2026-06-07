@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 import { supabase } from "./supabaseClient";
 import logoSvg from "./assets/logo.png";
@@ -42,7 +42,7 @@ function LoginPage({ onLogin, notify }) {
 }
 
 function Header({ user, tab, setTab, logout }) {
-  const tabs = TABS.filter((t) => t.roles.includes(user.role));
+  const tabs = useMemo(() => TABS.filter((t) => t.roles.includes(user.role)), [user.role]);
   useEffect(() => { if (!tabs.some((t) => t.id === tab)) setTab(tabs[0]?.id || "zaloga"); }, [tab, tabs, setTab]);
   return <header className="topbar"><div className="brand"><img src={logoSvg} alt="Venta Design" /><div><strong>Venta Design</strong><span>{user.username} · {user.role}</span></div></div><nav className="tabs">{tabs.map((t) => <button key={t.id} className={cx("tab", tab === t.id && "active")} onClick={() => setTab(t.id)}>{t.label}</button>)}</nav><button className="btn ghost" onClick={logout}>Odjava</button></header>;
 }
@@ -123,15 +123,35 @@ function MaterialRows({ rows, setRows, lots }) {
   );
 }
 
-function ImagesInput({ value, onChange }) {
+function ImagesInput({ value, onChange, notify }) {
+  const bucket = import.meta.env.VITE_SUPABASE_IMAGE_BUCKET || "naloga-slike";
   async function add(files) {
-    const loaded = await Promise.all([...files].map((file) => new Promise((resolve) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.readAsDataURL(file); })));
-    onChange([...value, ...loaded]);
+    const uploaded = [];
+    for (const file of [...files]) {
+      if (!file.type.startsWith("image/")) {
+        notify?.("Naloži je mogoče samo slike.", "error");
+        continue;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        notify?.("Slika je prevelika. Največja dovoljena velikost je 5 MB.", "error");
+        continue;
+      }
+      const extension = file.name.split(".").pop() || "jpg";
+      const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;
+      const { error } = await supabase.storage.from(bucket).upload(path, file, { contentType: file.type, upsert: false });
+      if (error) {
+        notify?.(error.message, "error");
+        continue;
+      }
+      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+      uploaded.push(data.publicUrl);
+    }
+    if (uploaded.length) onChange([...value, ...uploaded]);
   }
-  return <div className="form-section"><div className="section-head"><div style={{ display: "flex", alignItems: "center", gap: "8px" }}><h3>Slike</h3><small style={{ color: "var(--color-warning, orange)", fontSize: "0.85em" }}>(Še ni v funkciji)</small></div><div className="upload-actions"><label className="btn secondary">Naloži slike<input hidden type="file" accept="image/*" multiple onChange={(e) => add(e.target.files)} /></label><label className="btn secondary">Slikaj<input hidden type="file" accept="image/*" capture="environment" onChange={(e) => add(e.target.files)} /></label></div></div><div className="thumbs">{value.map((src, i) => <div className="thumb" key={i}><img src={src} alt="Predogled" /><button type="button" onClick={() => onChange(value.filter((_, idx) => idx !== i))}>×</button></div>)}</div></div>;
+  return <div className="form-section"><div className="section-head"><h3>Slike</h3><div className="upload-actions"><label className="btn secondary">Naloži slike<input hidden type="file" accept="image/*" multiple onChange={(e) => add(e.target.files)} /></label><label className="btn secondary">Slikaj<input hidden type="file" accept="image/*" capture="environment" onChange={(e) => add(e.target.files)} /></label></div></div><div className="thumbs">{value.map((src, i) => <div className="thumb" key={i}><img src={src} alt="Predogled" /><button type="button" onClick={() => onChange(value.filter((_, idx) => idx !== i))}>×</button></div>)}</div></div>;
 }
 
-function NalogaForm({ lots, initial, role, onSave, onCancel }) {
+function NalogaForm({ lots, initial, role, onSave, onCancel, notify }) {
   const [form, setForm] = useState(initial || emptyTask());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = Boolean(initial?.id);
@@ -148,7 +168,7 @@ function NalogaForm({ lots, initial, role, onSave, onCancel }) {
       setIsSubmitting(false);
     }
   }
-  return <form className="panel form-grid" onSubmit={submit}><div className="segmented wide"><button type="button" className={cx(form.tip === "splosno" && "active")} disabled={isEdit} onClick={() => setForm(emptyTask("splosno"))}>Splošno</button><button type="button" className={cx(form.tip === "vozila" && "active")} disabled={isEdit} onClick={() => setForm(emptyTask("vozila"))}>Vozila</button></div><label>Številka delovnega naloga<input required value={form.stevilka_delovnega_naloga} onChange={(e) => set({ stevilka_delovnega_naloga: e.target.value })} /></label><label>Naziv projekta<input required value={form.naziv_projekta} onChange={(e) => set({ naziv_projekta: e.target.value })} /></label><label>Status<select value={form.status} disabled={!admin || !isEdit} onChange={(e) => set({ status: e.target.value })}><option value="v_izdelavi">V izdelavi</option><option value="dokoncana">Dokončano</option>{isEdit && <option value="potrjena">Potrjeno</option>}</select></label><label>Številka računa<input value={form.stevilka_racuna || ""} disabled={!admin} onChange={(e) => set({ stevilka_racuna: e.target.value })} /></label><label className="wide">Opis storitve<textarea value={form.opis || ""} onChange={(e) => set({ opis: e.target.value })} /></label><label>Ime naročnika<input required value={form.kontakt_ime || ""} onChange={(e) => set({ kontakt_ime: e.target.value })} /></label><label>GSM<input value={form.kontakt_gsm || ""} onChange={(e) => set({ kontakt_gsm: e.target.value })} /></label><label>Email<input type="email" value={form.kontakt_email || ""} onChange={(e) => set({ kontakt_email: e.target.value })} /></label><label className="wide">Opomba<textarea value={form.opomba || ""} onChange={(e) => set({ opomba: e.target.value })} /></label>{form.tip === "vozila" && <><label>Znamka vozila<input required value={form.vozilo?.znamka_vozila || ""} onChange={(e) => set({ vozilo: { ...form.vozilo, znamka_vozila: e.target.value } })} /></label><label>Registrska številka<input value={form.vozilo?.registrska_stevilka || ""} onChange={(e) => set({ vozilo: { ...form.vozilo, registrska_stevilka: e.target.value } })} /></label><label>Številka šasije VIN<input required value={form.vozilo?.stevilka_sasije || ""} onChange={(e) => set({ vozilo: { ...form.vozilo, stevilka_sasije: e.target.value } })} /></label><div className="form-section wide"><h3>Poškodbe</h3><div className="check-grid">{DAMAGE.map((item) => <label className="check" key={item}><input type="checkbox" checked={(form.poskodbe || []).includes(item)} onChange={(e) => set({ poskodbe: e.target.checked ? [...(form.poskodbe || []), item] : (form.poskodbe || []).filter((x) => x !== item) })} />{item}</label>)}</div></div></>}<div className="wide"><MaterialRows rows={form.materiali || []} setRows={(materiali) => set({ materiali })} lots={lots} /></div><div className="wide"><ImagesInput value={form.slike || []} onChange={(slike) => set({ slike })} /></div><div className="form-actions wide">{onCancel && <button type="button" className="btn secondary" onClick={onCancel}>Prekliči</button>}<button className="btn primary" disabled={!valid || isSubmitting}>{isEdit ? (isSubmitting ? "Shranjujem..." : "Shrani spremembe") : (isSubmitting ? "Ustvarjam..." : "Ustvari nalogo")}</button></div></form>;
+  return <form className="panel form-grid" onSubmit={submit}><div className="segmented wide"><button type="button" className={cx(form.tip === "splosno" && "active")} disabled={isEdit} onClick={() => setForm(emptyTask("splosno"))}>Splošno</button><button type="button" className={cx(form.tip === "vozila" && "active")} disabled={isEdit} onClick={() => setForm(emptyTask("vozila"))}>Vozila</button></div><label>Številka delovnega naloga<input required value={form.stevilka_delovnega_naloga} onChange={(e) => set({ stevilka_delovnega_naloga: e.target.value })} /></label><label>Naziv projekta<input required value={form.naziv_projekta} onChange={(e) => set({ naziv_projekta: e.target.value })} /></label><label>Status<select value={form.status} disabled={!admin || !isEdit} onChange={(e) => set({ status: e.target.value })}><option value="v_izdelavi">V izdelavi</option><option value="dokoncana">Dokončano</option>{isEdit && <option value="potrjena">Potrjeno</option>}</select></label><label>Številka računa<input value={form.stevilka_racuna || ""} disabled={!admin} onChange={(e) => set({ stevilka_racuna: e.target.value })} /></label><label className="wide">Opis storitve<textarea value={form.opis || ""} onChange={(e) => set({ opis: e.target.value })} /></label><label>Ime naročnika<input required value={form.kontakt_ime || ""} onChange={(e) => set({ kontakt_ime: e.target.value })} /></label><label>GSM<input value={form.kontakt_gsm || ""} onChange={(e) => set({ kontakt_gsm: e.target.value })} /></label><label>Email<input type="email" value={form.kontakt_email || ""} onChange={(e) => set({ kontakt_email: e.target.value })} /></label><label className="wide">Opomba<textarea value={form.opomba || ""} onChange={(e) => set({ opomba: e.target.value })} /></label>{form.tip === "vozila" && <><label>Znamka vozila<input required value={form.vozilo?.znamka_vozila || ""} onChange={(e) => set({ vozilo: { ...form.vozilo, znamka_vozila: e.target.value } })} /></label><label>Registrska številka<input value={form.vozilo?.registrska_stevilka || ""} onChange={(e) => set({ vozilo: { ...form.vozilo, registrska_stevilka: e.target.value } })} /></label><label>Številka šasije VIN<input required value={form.vozilo?.stevilka_sasije || ""} onChange={(e) => set({ vozilo: { ...form.vozilo, stevilka_sasije: e.target.value } })} /></label><div className="form-section wide"><h3>Poškodbe</h3><div className="check-grid">{DAMAGE.map((item) => <label className="check" key={item}><input type="checkbox" checked={(form.poskodbe || []).includes(item)} onChange={(e) => set({ poskodbe: e.target.checked ? [...(form.poskodbe || []), item] : (form.poskodbe || []).filter((x) => x !== item) })} />{item}</label>)}</div></div></>}<div className="wide"><MaterialRows rows={form.materiali || []} setRows={(materiali) => set({ materiali })} lots={lots} /></div><div className="wide"><ImagesInput value={form.slike || []} onChange={(slike) => set({ slike })} notify={notify} /></div><div className="form-actions wide">{onCancel && <button type="button" className="btn secondary" onClick={onCancel}>Prekliči</button>}<button className="btn primary" disabled={!valid || isSubmitting}>{isEdit ? (isSubmitting ? "Shranjujem..." : "Shrani spremembe") : (isSubmitting ? "Ustvarjam..." : "Ustvari nalogo")}</button></div></form>;
 }
 
 function ZalogaView({ data, role, reload, notify }) {
@@ -175,10 +195,10 @@ function EvidenceView({ lots, role, reload, notify }) {
   const [items, setItems] = useState([]);
   const [selected, setSelected] = useState(null);
   const [editing, setEditing] = useState(null);
-  const load = () => api.naloge({ tip, ...filters }).then(setItems).catch((e) => notify(e.message, "error"));
-  useEffect(() => { load(); }, [tip, filters.search, filters.status, filters.datum_od, filters.datum_do]);
+  const load = useCallback(() => api.naloge({ tip, ...filters }).then(setItems).catch((e) => notify(e.message, "error")), [tip, filters, notify]);
+  useEffect(() => { load(); }, [load]);
   async function save(payload) { await api.updateNaloga(editing.id, payload); notify("Naloga je posodobljena."); setEditing(null); await load(); reload(); }
-  return <div className="grid-layout"><section className="panel"><div className="segmented"><button className={cx(tip === "splosno" && "active")} onClick={() => setTip("splosno")}>Evidenca: Splošno</button><button className={cx(tip === "vozila" && "active")} onClick={() => setTip("vozila")}>Evidenca: Vozila</button></div><div className="filters" style={{ alignItems: "end" }}><label>Iskanje<input placeholder="Išči naloge" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} /></label><label>Datum od<input type="date" value={filters.datum_od} onChange={(e) => setFilters({ ...filters, datum_od: e.target.value })} /></label><label>Datum do<input type="date" value={filters.datum_do} onChange={(e) => setFilters({ ...filters, datum_do: e.target.value })} /></label><label>Status<select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}><option value="">Vsi statusi</option><option value="v_izdelavi">V izdelavi</option><option value="dokoncana">Dokončana</option><option value="potrjena">Potrjena</option></select></label><button className="btn secondary" onClick={() => setFilters({ search: "", status: "", datum_od: "", datum_do: "" })}>Počisti filtre</button></div><div className="dense-list">{items.length === 0 && <p className="muted">Ni nalogov za prikaz.</p>}{items.map((n) => <button key={n.id} className="work-item" onClick={() => setSelected(n)}><div><strong>{n.naziv_projekta}</strong><span>{d(n.datum)} · {(n.opis || "Brez opisa").slice(0, 80)}</span></div><Badge value={n.status} /></button>)}</div></section><aside>{editing ? <NalogaForm initial={editing} lots={lots} role={role} onSave={save} onCancel={() => setEditing(null)} /> : <div className="panel empty-side">Izberi nalogo za podrobnosti ali urejanje.</div>}</aside>{selected && <DetailModal naloga={selected} role={role} reload={async () => { await load(); await reload(); }} notify={notify} onClose={() => setSelected(null)} onEdit={() => { setEditing({ ...selected, slike: selected.slike?.map((s) => s.url) || [], poskodbe: selected.poskodbe?.map((p) => p.opis) || [], materiali: selected.materiali?.map((m) => ({ lot_produkt_id: m.lot_produkt_id, kolicina_tm: m.kolicina_tm })) || [] }); setSelected(null); }} />}</div>;
+  return <div className="grid-layout"><section className="panel"><div className="segmented"><button className={cx(tip === "splosno" && "active")} onClick={() => setTip("splosno")}>Evidenca: Splošno</button><button className={cx(tip === "vozila" && "active")} onClick={() => setTip("vozila")}>Evidenca: Vozila</button></div><div className="filters" style={{ alignItems: "end" }}><label>Iskanje<input placeholder="Išči naloge" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} /></label><label>Datum od<input type="date" value={filters.datum_od} onChange={(e) => setFilters({ ...filters, datum_od: e.target.value })} /></label><label>Datum do<input type="date" value={filters.datum_do} onChange={(e) => setFilters({ ...filters, datum_do: e.target.value })} /></label><label>Status<select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}><option value="">Vsi statusi</option><option value="v_izdelavi">V izdelavi</option><option value="dokoncana">Dokončana</option><option value="potrjena">Potrjena</option></select></label><button className="btn secondary" onClick={() => setFilters({ search: "", status: "", datum_od: "", datum_do: "" })}>Počisti filtre</button></div><div className="dense-list">{items.length === 0 && <p className="muted">Ni nalogov za prikaz.</p>}{items.map((n) => <button key={n.id} className="work-item" onClick={() => setSelected(n)}><div><strong>{n.naziv_projekta}</strong><span>{d(n.datum)} · {(n.opis || "Brez opisa").slice(0, 80)}</span></div><Badge value={n.status} /></button>)}</div></section><aside>{editing ? <NalogaForm initial={editing} lots={lots} role={role} onSave={save} onCancel={() => setEditing(null)} notify={notify} /> : <div className="panel empty-side">Izberi nalogo za podrobnosti ali urejanje.</div>}</aside>{selected && <DetailModal naloga={selected} role={role} reload={async () => { await load(); await reload(); }} notify={notify} onClose={() => setSelected(null)} onEdit={() => { setEditing({ ...selected, slike: selected.slike?.map((s) => s.url) || [], poskodbe: selected.poskodbe?.map((p) => p.opis) || [], materiali: selected.materiali?.map((m) => ({ lot_produkt_id: m.lot_produkt_id, kolicina_tm: m.kolicina_tm })) || [] }); setSelected(null); }} />}</div>;
 }
 
 function NakupForm({ produkti, onSave, onClose, notify, reload }) {
@@ -221,8 +241,8 @@ function AnalysisView({ produkti, reload, notify, role }) {
 
   const [period, setPeriod] = useState(getPeriods()[0]);
 
-  const load = () => Promise.all([api.analizaSummary({ datum_od: period.od, datum_do: period.do }), api.nakupi({ datum_od: period.od, datum_do: period.do }), api.analizaProdaja({ datum_od: period.od, datum_do: period.do })]).then(([s, n, p]) => { setSummary(s); setNakupi(n); setProdaja(p); }).catch((e) => notify(e.message, "error"));
-  useEffect(() => { load(); }, [period.od, period.do]);
+  const load = useCallback(() => Promise.all([api.analizaSummary({ datum_od: period.od, datum_do: period.do }), api.nakupi({ datum_od: period.od, datum_do: period.do }), api.analizaProdaja({ datum_od: period.od, datum_do: period.do })]).then(([s, n, p]) => { setSummary(s); setNakupi(n); setProdaja(p); }).catch((e) => notify(e.message, "error")), [period.od, period.do, notify]);
+  useEffect(() => { load(); }, [load]);
   async function saveNakup(payload) { await api.createNakup(payload); notify("Nakup je shranjen."); setShowNakup(false); await load(); reload(); }
   async function saveSale(e) { e.preventDefault(); await api.createPrihodek(sale); notify("Prihodek je shranjen."); setShowSale(false); setSale({ datum: "", opis: "", narocnik: "", stevilka_racuna: "", neto_znesek: "", ddv: 22 }); await load(); }
 
@@ -266,10 +286,10 @@ export default function App() {
   const [zaloga, setZaloga] = useState([]);
   const [produkti, setProdukti] = useState([]);
   const [lots, setLots] = useState([]);
-  const notify = (message, type = "success") => { setToast({ message, type }); setTimeout(() => setToast(null), 5000); };
-  async function loadData() { const [z, p, l] = await Promise.all([api.zaloga(), api.produkti(), api.lots()]); setZaloga(z); setProdukti(p); setLots(l); }
-  async function loadUser() { const profile = await api.me(); setUser(profile); return profile; }
-  async function boot(session) {
+  const notify = useCallback((message, type = "success") => { setToast({ message, type }); setTimeout(() => setToast(null), 5000); }, []);
+  const loadData = useCallback(async function loadData() { const [z, p, l] = await Promise.all([api.zaloga(), api.produkti(), api.lots()]); setZaloga(z); setProdukti(p); setLots(l); }, []);
+  const loadUser = useCallback(async function loadUser() { const profile = await api.me(); setUser(profile); return profile; }, []);
+  const boot = useCallback(async function boot(session) {
     setLoading(true);
     try {
       if (session) {
@@ -281,13 +301,13 @@ export default function App() {
       } else {
         setUser(null);
       }
-    } catch (e) {
+    } catch {
       // Sem pride samo če loadUser() ne uspe (auth napaka)
       setUser(null);
     } finally {
       setLoading(false);
     }
-  }
+  }, [loadData, loadUser, notify]);
   useEffect(() => {
     let mounted = true;
     supabase.auth.getSession().then(({ data }) => {
@@ -307,9 +327,9 @@ export default function App() {
       mounted = false;
       data.subscription.unsubscribe();
     };
-  }, []);
+  }, [boot, notify]);
   async function logout() { await supabase.auth.signOut(); setUser(null); }
   if (loading) return <div className="loading">Nalagam...</div>;
   if (!user) return <><LoginPage notify={notify} onLogin={async () => { await loadUser(); await loadData(); }} /><Toast toast={toast} /></>;
-  return <div className="app"><Header user={user} tab={tab} setTab={setTab} logout={logout} /><main className="content">{tab === "zaloga" && <ZalogaView data={zaloga} role={user.role} reload={loadData} notify={notify} />}{tab === "naloge" && <NalogaForm lots={lots} role={user.role} onSave={async (payload) => { await api.createNaloga(payload); notify("Delovni nalog je ustvarjen."); await loadData(); }} />}{tab === "evidenca" && <EvidenceView lots={lots} role={user.role} reload={loadData} notify={notify} />}{tab === "analiza" && <AnalysisView produkti={produkti} reload={loadData} notify={notify} role={user.role} />}</main><Toast toast={toast} /></div>;
+  return <div className="app"><Header user={user} tab={tab} setTab={setTab} logout={logout} /><main className="content">{tab === "zaloga" && <ZalogaView data={zaloga} role={user.role} reload={loadData} notify={notify} />}{tab === "naloge" && <NalogaForm lots={lots} role={user.role} notify={notify} onSave={async (payload) => { await api.createNaloga(payload); notify("Delovni nalog je ustvarjen."); await loadData(); }} />}{tab === "evidenca" && <EvidenceView lots={lots} role={user.role} reload={loadData} notify={notify} />}{tab === "analiza" && <AnalysisView produkti={produkti} reload={loadData} notify={notify} role={user.role} />}</main><Toast toast={toast} /></div>;
 }
