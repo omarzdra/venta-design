@@ -39,6 +39,54 @@ function Badge({ value }) { return <span className={cx("badge", value)}>{STATUS[
 function Modal({ title, children, onClose }) { return <div className="modal-backdrop" onMouseDown={onClose}><section className="modal" onMouseDown={(e) => e.stopPropagation()}><div className="modal-title"><h2>{title}</h2><button className="icon-btn" onClick={onClose}>x</button></div>{children}</section></div>; }
 function LoadingPopup() { return <div className="loading-popover">Nalaganje...</div>; }
 
+function imageFileName(image) {
+  const fallback = `naloga-slika-${image?.id || Date.now()}.jpg`;
+  const rawName = image?.url?.split("/").pop()?.split("?")[0];
+  return rawName ? decodeURIComponent(rawName) : fallback;
+}
+
+async function downloadImage(image, notify) {
+  const filename = imageFileName(image);
+  try {
+    const response = await fetch(image.url);
+    if (!response.ok) throw new Error("Prenos slike ni uspel.");
+    const blobUrl = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch {
+    window.open(image.url, "_blank", "noopener,noreferrer");
+    notify?.("Slika se je odprla v novem zavihku. Tam jo lahko shranis.", "error");
+  }
+}
+
+function PictureViewer({ image, onClose, notify }) {
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  if (!image) return null;
+  return (
+    <div className="picture-viewer" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="picture-viewer-inner" onClick={(event) => event.stopPropagation()}>
+        <div className="picture-viewer-actions">
+          <button type="button" className="btn secondary" onClick={() => downloadImage(image, notify)}>Prenesi</button>
+          <button type="button" className="icon-btn" aria-label="Zapri pregled slike" onClick={onClose}>x</button>
+        </div>
+        <img src={image.url} alt="Slika delovnega naloga" />
+      </div>
+    </div>
+  );
+}
+
 function SearchSelect({ options, value, onChange, placeholder, disabled = false, clearable = true }) {
   const selected = options.find((o) => String(o.value) === String(value));
   const [query, setQuery] = useState(selected?.label || "");
@@ -240,6 +288,7 @@ function ZalogaView({ data, role, reload, notify }) {
 }
 
 function DetailModal({ naloga, role, onClose, onEdit, reload, notify }) {
+  const [viewerImage, setViewerImage] = useState(null);
   const canConfirm = role === "admin" && naloga.stevilka_racuna && naloga.materiali?.length >= 1 && Number(naloga.cena_dela_neto || 0) > 0;
   async function done() { await api.dokoncajNaloga(naloga.id); notify("Naloga je oznacena kot dokoncana."); if (reload) await reload(); onClose(); }
   async function confirm() { await api.potrdiNaloga(naloga.id, {}); notify("Naloga je potrjena."); if (reload) await reload(); onClose(); }
@@ -262,8 +311,9 @@ function DetailModal({ naloga, role, onClose, onEdit, reload, notify }) {
       <div className="total-line">Skupaj material: <strong>{money(naloga.cena_materiala)}</strong></div>
       {naloga.storitve?.length > 0 && <><h3>Storitve</h3><table className="mobile-cards"><thead><tr><th>Storitev</th><th>Ure</th><th>Skupaj</th></tr></thead><tbody>{naloga.storitve.map((s) => <tr key={s.id}><td data-label="Storitev">{s.storitev.naziv}</td><td data-label="Ure">{s.stevilo_ur}h</td><td data-label="Skupaj">{money(s.cena_skupaj)}</td></tr>)}</tbody></table></>}
       {naloga.dnevniStrosek && <div className="total-line">Dnevni strosek: {money(naloga.dnevniStrosek.dnevni_strosek)}/dan x {naloga.dnevniStrosek.stevilo_dni} dni = <strong>{money(naloga.dnevniStrosek.skupaj)}</strong></div>}
-      {naloga.slike?.length > 0 && <><h3>Slike</h3><div className="thumbs">{naloga.slike.map((s) => <div className="thumb" key={s.id}><img src={s.url} alt="Naloga" /><button type="button" title="Odstrani sliko" onClick={() => removeImage(s.id)}>x</button></div>)}</div></>}
+      {naloga.slike?.length > 0 && <><h3>Slike</h3><div className="thumbs">{naloga.slike.map((s) => <div className="thumb" key={s.id}><button type="button" className="thumb-preview" title="Odpri sliko" onClick={() => setViewerImage(s)}><img src={s.url} alt="Naloga" /></button><button type="button" title="Odstrani sliko" onClick={() => removeImage(s.id)}>x</button></div>)}</div></>}
       <div className="form-actions"><button className="btn secondary" onClick={onEdit}>Uredi</button>{role === "admin" && naloga.status !== "potrjena" && <><button className="btn secondary" onClick={done}>Oznaci kot dokoncano</button><button className="btn primary" disabled={!canConfirm} onClick={confirm}>Potrdi nalog</button></>}</div>
+      <PictureViewer image={viewerImage} onClose={() => setViewerImage(null)} notify={notify} />
     </Modal>
   );
 }
