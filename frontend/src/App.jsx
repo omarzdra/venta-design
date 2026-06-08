@@ -7,12 +7,12 @@ import "./styles.css";
 
 const STATUS = { v_izdelavi: "V izdelavi", dokoncana: "Dokoncana", potrjena: "Potrjena" };
 const TABS = [
-  { id: "zaloga", label: "Zaloga Materiala", roles: ["admin", "racunovodkinja", "grega"] },
-  { id: "naloge", label: "Ustvari Delovni Nalog", roles: ["admin", "grega"] },
-  { id: "evidenca", label: "Evidenca Delovnih Nalogov", roles: ["admin", "grega"] },
-  { id: "storitve", label: "Storitve", roles: ["admin"] },
-  { id: "ponudba", label: "Ustvari Ponudbo", roles: ["admin"] },
-  { id: "analiza", label: "Analiza", roles: ["admin"] }
+  { id: "zaloga", label: "Zaloga Materiala", mobileLabel: "Zaloga", roles: ["admin", "racunovodkinja", "grega"] },
+  { id: "naloge", label: "Ustvari Delovni Nalog", mobileLabel: "DN", roles: ["admin", "grega"] },
+  { id: "evidenca", label: "Evidenca Delovnih Nalogov", mobileLabel: "Evidenca", roles: ["admin", "grega"] },
+  { id: "storitve", label: "Storitve", mobileLabel: "Storitve", roles: ["admin"] },
+  { id: "ponudba", label: "Ustvari Ponudbo", mobileLabel: "Ponudba", roles: ["admin"] },
+  { id: "analiza", label: "Analiza", mobileLabel: "Analiza", roles: ["admin"] }
 ];
 const CATS = ["material", "oprema", "lizing", "gorivo", "bancni_stroski", "place", "smeti", "telefon", "najemnina", "posta", "mehanik", "oglasevanje", "pripomocki", "zavarovanje", "drugo"];
 const CAT_LABEL = { material: "Material", oprema: "Oprema", lizing: "Lizing", gorivo: "Gorivo", bancni_stroski: "Bancni stroski", place: "Place", smeti: "Smeti", telefon: "Telefon", najemnina: "Najemnina", posta: "Posta", mehanik: "Mehanik", oglasevanje: "Oglasevanje", pripomocki: "Pripomocki", zavarovanje: "Zavarovanje", drugo: "Drugo" };
@@ -37,6 +37,7 @@ const calcDnevniTotal = (row) => Number(row?.dnevni_strosek || 0) * Number(row?.
 function Toast({ toast }) { return toast ? <div className={cx("toast", toast.type)}>{toast.message}</div> : null; }
 function Badge({ value }) { return <span className={cx("badge", value)}>{STATUS[value] || value}</span>; }
 function Modal({ title, children, onClose }) { return <div className="modal-backdrop" onMouseDown={onClose}><section className="modal" onMouseDown={(e) => e.stopPropagation()}><div className="modal-title"><h2>{title}</h2><button className="icon-btn" onClick={onClose}>x</button></div>{children}</section></div>; }
+function LoadingPopup() { return <div className="loading-popover">Nalaganje...</div>; }
 
 function SearchSelect({ options, value, onChange, placeholder, disabled = false, clearable = true }) {
   const selected = options.find((o) => String(o.value) === String(value));
@@ -88,7 +89,7 @@ function Header({ user, tab, setTab, logout }) {
   useEffect(() => { if (!tabs.some((t) => t.id === tab)) setTab(tabs[0]?.id || "zaloga"); }, [tab, tabs, setTab]);
   return <>
     <header className="topbar"><div className="brand"><img src={logoSvg} alt="Venta Design" /><div><strong>Venta Design</strong><span>{user.username} - {user.role}</span></div></div><nav className="tabs">{tabs.map((t) => <button key={t.id} className={cx("tab", tab === t.id && "active")} onClick={() => setTab(t.id)}>{t.label}</button>)}</nav><button className="btn ghost" onClick={logout}>Odjava</button></header>
-    <nav className="tab-bar-mobile">{tabs.map((t) => <button key={t.id} className={cx(tab === t.id && "active")} onClick={() => setTab(t.id)}>{t.label.split(" ")[0]}</button>)}</nav>
+    <nav className="tab-bar-mobile">{tabs.map((t) => <button key={t.id} className={cx(tab === t.id && "active")} onClick={() => setTab(t.id)}>{t.mobileLabel}</button>)}</nav>
   </>;
 }
 
@@ -236,7 +237,29 @@ function DetailModal({ naloga, role, onClose, onEdit, reload, notify }) {
   const canConfirm = role === "admin" && naloga.stevilka_racuna && naloga.materiali?.length >= 1 && Number(naloga.cena_dela_neto || 0) > 0;
   async function done() { await api.dokoncajNaloga(naloga.id); notify("Naloga je oznacena kot dokoncana."); if (reload) await reload(); onClose(); }
   async function confirm() { await api.potrdiNaloga(naloga.id, {}); notify("Naloga je potrjena."); if (reload) await reload(); onClose(); }
-  return <Modal title={naloga.naziv_projekta} onClose={onClose}><div className="detail-grid"><div><span>St. DN</span><strong>{naloga.stevilka_delovnega_naloga}</strong></div><div><span>Status</span><Badge value={naloga.status} /></div><div><span>Datum</span><strong>{d(naloga.datum)}</strong></div><div><span>St. racuna</span><strong>{naloga.stevilka_racuna || "/"}</strong></div><div><span>Kontakt</span><strong>{naloga.kontakt_ime}</strong><small>{[naloga.kontakt_gsm, naloga.kontakt_email].filter(Boolean).join(" - ")}</small></div>{role === "admin" && naloga.cena_dela_neto && <div><span>Cena dela neto</span><strong>{money(naloga.cena_dela_neto)}</strong><small>Bruto {money(naloga.cena_dela_bruto)}</small></div>}{naloga.vozilo && <div><span>Vozilo</span><strong>{naloga.vozilo.znamka_vozila}</strong><small>{naloga.vozilo.registrska_stevilka || "/"} - {naloga.vozilo.stevilka_sasije}</small></div>}<div className="wide"><span>Opis</span><p>{naloga.opis || "/"}</p></div></div>{naloga.poskodbe?.length > 0 && <div className="chips">{naloga.poskodbe.map((p) => <span key={p.id || p.opis}>{p.opis}</span>)}</div>}<h3>Poraba materiala</h3><table className="mobile-cards"><thead><tr><th>LOT</th><th>Material</th><th>Kolicina</th><th>m2</th><th>Vrednost</th></tr></thead><tbody>{(naloga.materiali || []).map((m) => <tr key={m.id}><td data-label="LOT">{m.lotProdukt?.produkt?.tip === "adr" ? "/" : m.lotProdukt?.lot_stevilka || "/"}</td><td data-label="Material">{m.lotProdukt?.produkt?.naziv_produkta}</td><td data-label="Kolicina">{Number(m.kolicina_tm).toFixed(2)} {m.lotProdukt?.produkt?.tip === "adr" ? "kos" : m.lotProdukt?.produkt?.tip === "tabla" ? "m2" : "tm"}</td><td data-label="m2">{m.kolicina_m2 ? Number(m.kolicina_m2).toFixed(2) : "/"}</td><td data-label="Vrednost">{money(m.vrednost)}</td></tr>)}</tbody></table><div className="total-line">Skupaj material: <strong>{money(naloga.cena_materiala)}</strong></div>{naloga.storitve?.length > 0 && <><h3>Storitve</h3><table className="mobile-cards"><thead><tr><th>Storitev</th><th>Ure</th><th>Skupaj</th></tr></thead><tbody>{naloga.storitve.map((s) => <tr key={s.id}><td data-label="Storitev">{s.storitev.naziv}</td><td data-label="Ure">{s.stevilo_ur}h</td><td data-label="Skupaj">{money(s.cena_skupaj)}</td></tr>)}</tbody></table></>}{naloga.dnevniStrosek && <div className="total-line">Dnevni strosek: {money(naloga.dnevniStrosek.dnevni_strosek)}/dan x {naloga.dnevniStrosek.stevilo_dni} dni = <strong>{money(naloga.dnevniStrosek.skupaj)}</strong></div>}{naloga.slike?.length > 0 && <div className="thumbs">{naloga.slike.map((s) => <div className="thumb" key={s.id}><img src={s.url} alt="Naloga" /></div>)}</div>}<div className="form-actions"><button className="btn secondary" onClick={onEdit}>Uredi</button>{role === "admin" && naloga.status !== "potrjena" && <><button className="btn secondary" onClick={done}>Oznaci kot dokoncano</button><button className="btn primary" disabled={!canConfirm} onClick={confirm}>Potrdi nalog</button></>}</div></Modal>;
+  async function removeImage(slikaId) { await api.deleteNalogaSlika(naloga.id, slikaId); notify("Slika je odstranjena."); if (reload) await reload(); onClose(); }
+  return (
+    <Modal title={naloga.naziv_projekta} onClose={onClose}>
+      <div className="detail-grid">
+        <div><span>St. DN</span><strong>{naloga.stevilka_delovnega_naloga}</strong></div>
+        <div><span>Status</span><Badge value={naloga.status} /></div>
+        <div><span>Datum</span><strong>{d(naloga.datum)}</strong></div>
+        <div><span>St. racuna</span><strong>{naloga.stevilka_racuna || "/"}</strong></div>
+        <div><span>Kontakt</span><strong>{naloga.kontakt_ime}</strong><small>{[naloga.kontakt_gsm, naloga.kontakt_email].filter(Boolean).join(" - ")}</small></div>
+        {role === "admin" && naloga.cena_dela_neto && <div><span>Cena dela neto</span><strong>{money(naloga.cena_dela_neto)}</strong><small>Bruto {money(naloga.cena_dela_bruto)}</small></div>}
+        {naloga.vozilo && <div><span>Vozilo</span><strong>{naloga.vozilo.znamka_vozila}</strong><small>{naloga.vozilo.registrska_stevilka || "/"} - {naloga.vozilo.stevilka_sasije}</small></div>}
+        <div className="wide"><span>Opis</span><p>{naloga.opis || "/"}</p></div>
+      </div>
+      {naloga.poskodbe?.length > 0 && <div className="chips">{naloga.poskodbe.map((p) => <span key={p.id || p.opis}>{p.opis}</span>)}</div>}
+      <h3>Poraba materiala</h3>
+      <table className="mobile-cards"><thead><tr><th>LOT</th><th>Material</th><th>Kolicina</th><th>m2</th><th>Vrednost</th></tr></thead><tbody>{(naloga.materiali || []).map((m) => <tr key={m.id}><td data-label="LOT">{m.lotProdukt?.produkt?.tip === "adr" ? "/" : m.lotProdukt?.lot_stevilka || "/"}</td><td data-label="Material">{m.lotProdukt?.produkt?.naziv_produkta}</td><td data-label="Kolicina">{Number(m.kolicina_tm).toFixed(2)} {m.lotProdukt?.produkt?.tip === "adr" ? "kos" : m.lotProdukt?.produkt?.tip === "tabla" ? "m2" : "tm"}</td><td data-label="m2">{m.kolicina_m2 ? Number(m.kolicina_m2).toFixed(2) : "/"}</td><td data-label="Vrednost">{money(m.vrednost)}</td></tr>)}</tbody></table>
+      <div className="total-line">Skupaj material: <strong>{money(naloga.cena_materiala)}</strong></div>
+      {naloga.storitve?.length > 0 && <><h3>Storitve</h3><table className="mobile-cards"><thead><tr><th>Storitev</th><th>Ure</th><th>Skupaj</th></tr></thead><tbody>{naloga.storitve.map((s) => <tr key={s.id}><td data-label="Storitev">{s.storitev.naziv}</td><td data-label="Ure">{s.stevilo_ur}h</td><td data-label="Skupaj">{money(s.cena_skupaj)}</td></tr>)}</tbody></table></>}
+      {naloga.dnevniStrosek && <div className="total-line">Dnevni strosek: {money(naloga.dnevniStrosek.dnevni_strosek)}/dan x {naloga.dnevniStrosek.stevilo_dni} dni = <strong>{money(naloga.dnevniStrosek.skupaj)}</strong></div>}
+      {naloga.slike?.length > 0 && <><h3>Slike</h3><div className="thumbs">{naloga.slike.map((s) => <div className="thumb" key={s.id}><img src={s.url} alt="Naloga" /><button type="button" title="Odstrani sliko" onClick={() => removeImage(s.id)}>x</button></div>)}</div></>}
+      <div className="form-actions"><button className="btn secondary" onClick={onEdit}>Uredi</button>{role === "admin" && naloga.status !== "potrjena" && <><button className="btn secondary" onClick={done}>Oznaci kot dokoncano</button><button className="btn primary" disabled={!canConfirm} onClick={confirm}>Potrdi nalog</button></>}</div>
+    </Modal>
+  );
 }
 
 function EvidenceView({ lots, storitve, role, reload, notify }) {
@@ -267,17 +290,20 @@ function AnalysisView({ produkti, reload, notify, role }) {
   const [summary, setSummary] = useState(null);
   const [nakupi, setNakupi] = useState([]);
   const [prodaja, setProdaja] = useState([]);
-  const [showNakup, setShowNakup] = useState(false);
-  const [showSale, setShowSale] = useState(false);
-  const [sale, setSale] = useState({ datum: "", opis: "", narocnik: "", stevilka_racuna: "", neto_znesek: "", ddv: 22 });
+  const [showNakup, setShowNakup] = useState(() => localStorage.getItem("venta_modal_nakup_open") === "true");
+  const [showSale, setShowSale] = useState(() => localStorage.getItem("venta_modal_prodaja_open") === "true");
+  const [sale, setSale] = useState(() => loadForm("prodaja") || { datum: "", opis: "", narocnik: "", stevilka_racuna: "", neto_znesek: "", ddv: 22 });
   const [nakupFilters, setNakupFilters] = useState({ search: "", znesek_od: "", znesek_do: "", datum_od: "", datum_do: "" });
   const [prodajaFilters, setProdajaFilters] = useState({ search: "", znesek_od: "", znesek_do: "", datum_od: "", datum_do: "", tip: "" });
   const [detailNakup, setDetailNakup] = useState(null);
   const [detailSale, setDetailSale] = useState(null);
   const load = useCallback(() => Promise.all([api.analizaSummary({}), api.nakupi({}), api.analizaProdaja({ search: prodajaFilters.search })]).then(([s, n, p]) => { setSummary(s); setNakupi(n); setProdaja(p); }).catch((e) => notify(e.message, "error")), [notify, prodajaFilters.search]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { localStorage.setItem("venta_modal_nakup_open", showNakup ? "true" : "false"); }, [showNakup]);
+  useEffect(() => { localStorage.setItem("venta_modal_prodaja_open", showSale ? "true" : "false"); }, [showSale]);
+  useEffect(() => { const timer = setTimeout(() => saveForm("prodaja", sale), 400); return () => clearTimeout(timer); }, [sale]);
   async function saveNakup(payload) { await api.createNakup(payload); notify("Nakup je shranjen."); setShowNakup(false); await load(); reload(); }
-  async function saveSale(e) { e.preventDefault(); await api.createPrihodek(sale); notify("Prihodek je shranjen."); setShowSale(false); setSale({ datum: "", opis: "", narocnik: "", stevilka_racuna: "", neto_znesek: "", ddv: 22 }); await load(); }
+  async function saveSale(e) { e.preventDefault(); await api.createPrihodek(sale); notify("Prihodek je shranjen."); setShowSale(false); clearForm("prodaja"); setSale({ datum: "", opis: "", narocnik: "", stevilka_racuna: "", neto_znesek: "", ddv: 22 }); await load(); }
   const filteredNakupi = nakupi.filter((n) => !nakupFilters.search || `${n.dobavitelj} ${n.stevilka_racuna}`.toLowerCase().includes(nakupFilters.search.toLowerCase()));
   const filteredProdaja = prodaja.filter((p) => {
     const q = prodajaFilters.search.toLowerCase();
@@ -335,7 +361,7 @@ export default function App() {
   useEffect(() => { let mounted = true; supabase.auth.getSession().then(({ data }) => { if (mounted) boot(data.session); }).catch((e) => { if (mounted) { notify(e.message, "error"); setLoading(false); } }); const { data } = supabase.auth.onAuthStateChange((_event, session) => { setTimeout(() => { if (mounted) boot(session); }, 0); }); return () => { mounted = false; data.subscription.unsubscribe(); }; }, [boot, notify]);
   async function logout() { await supabase.auth.signOut(); setUser(null); }
   const initialNaloga = preneseniPodatki;
-  if (loading) return <div className="loading">Nalagam...</div>;
+  if (loading) return <div className="app"><LoadingPopup /></div>;
   if (!user) return <><LoginPage notify={notify} onLogin={async () => { await loadUser(); await loadData(); }} /><Toast toast={toast} /></>;
   return <div className="app"><Header user={user} tab={tab} setTab={setTab} logout={logout} /><main className="content">{tab === "zaloga" && <ZalogaView data={zaloga} role={user.role} reload={loadData} notify={notify} />}{tab === "naloge" && <NalogaForm key={initialNaloga ? "prenesi" : "new"} initial={initialNaloga || undefined} lots={lots} storitve={storitve} role={user.role} notify={notify} onSave={async (payload) => { await api.createNaloga(payload); setPreneseniPodatki(null); notify("Delovni nalog je ustvarjen."); await loadData(); }} />}{tab === "evidenca" && <EvidenceView lots={lots} storitve={storitve} role={user.role} reload={loadData} notify={notify} />}{tab === "storitve" && <StoritveView storitve={storitve} reload={loadData} notify={notify} />}{tab === "ponudba" && <PonudbaView produkti={produkti} lots={lots} storitve={storitve} setPreneseniPodatki={setPreneseniPodatki} setTab={setTab} />}{tab === "analiza" && <AnalysisView produkti={produkti} reload={loadData} notify={notify} role={user.role} />}</main><Toast toast={toast} /></div>;
 }

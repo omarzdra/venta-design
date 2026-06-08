@@ -1,7 +1,8 @@
 const KEYS = {
   nalogaSplosno: "venta_form_naloga_splosno",
   nalogaVozila: "venta_form_naloga_vozila",
-  nakup: "venta_form_nakup"
+  nakup: "venta_form_nakup",
+  prodaja: "venta_form_prodaja"
 };
 
 export function saveForm(key, data) {

@@ -31,6 +31,20 @@ small, .muted { color: var(--color-text-muted); }
 
 .app { min-height: 100vh; }
 .loading, .login-shell { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.loading-popover {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 90;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 4px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.28);
+  color: var(--color-text);
+  padding: 12px 14px;
+  font-weight: 700;
+}
 .login-panel { width: min(420px, 100%); }
 .login-logo { height: 44px; width: auto; margin-bottom: 16px; }
 

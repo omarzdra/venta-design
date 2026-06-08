@@ -19,6 +19,8 @@ const app = express();
 const prisma = new PrismaClient();
 const supabaseUrl = process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const nalogaSlikeBucket = process.env.NALOGA_SLIKE_BUCKET || "naloga-slike";
+const maintenanceSecret = process.env.MAINTENANCE_SECRET;
 const allowDevAuth = process.env.NODE_ENV !== "production" && process.env.DEV_AUTH_BYPASS === "true";
 const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
@@ -74,6 +76,26 @@ function dateRangeWhere(from, to) {
   return { datum: range };
 }
 
+function storagePathFromUrl(url, bucket = nalogaSlikeBucket) {
+  try {
+    const parsed = new URL(String(url));
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const idx = parsed.pathname.indexOf(marker);
+    if (idx === -1) return null;
+    return decodeURIComponent(parsed.pathname.slice(idx + marker.length));
+  } catch {
+    return null;
+  }
+}
+
+async function deleteNalogaStorageUrls(urls = []) {
+  if (!supabase) throw new Error("Supabase storage ni nastavljen na strežniku.");
+  const paths = [...new Set(urls.map((url) => storagePathFromUrl(url)).filter(Boolean))];
+  if (!paths.length) return;
+  const { error } = await supabase.storage.from(nalogaSlikeBucket).remove(paths);
+  if (error) throw error;
+}
+
 function requireFields(body, fields) {
   const missing = fields.filter((field) => body[field] === undefined || body[field] === null || String(body[field]).trim() === "");
   if (missing.length) throw new Error(`Manjkajo obvezna polja: ${missing.join(", ")}.`);
@@ -124,6 +146,11 @@ function sanitizeNaloga(naloga) {
 
 async function auth(req, res, next) {
   try {
+    if (req.path === "/maintenance/cleanup-naloga-slike" && maintenanceSecret && req.headers["x-maintenance-secret"] === maintenanceSecret) {
+      req.user = { id: "maintenance", username: "maintenance", role: "admin" };
+      return next();
+    }
+
     if (allowDevAuth && !req.headers.authorization) {
       req.user = { id: "dev", username: "filip", role: "admin" };
       return next();
@@ -564,8 +591,11 @@ app.put("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
         await tx.delovnaNalogaPoskodba.deleteMany({ where: { delovna_naloga_id: id } });
         for (const opis of req.body.poskodbe || []) await tx.delovnaNalogaPoskodba.create({ data: { delovna_naloga_id: id, opis } });
       }
+      const nextSlike = (req.body.slike || []).map(String);
+      const removedSlike = (current.slike || []).filter((slika) => !nextSlike.includes(slika.url));
+      if (removedSlike.length) await deleteNalogaStorageUrls(removedSlike.map((slika) => slika.url));
       await tx.delovnaNalogaSlika.deleteMany({ where: { delovna_naloga_id: id } });
-      for (const url of req.body.slike || []) await tx.delovnaNalogaSlika.create({ data: { delovna_naloga_id: id, url: String(url) } });
+      for (const url of nextSlike) await tx.delovnaNalogaSlika.create({ data: { delovna_naloga_id: id, url } });
       await syncNalogaMaterials(tx, id, req.body.materiali || [], req.body.storitve || [], req.body.dnevniStrosek || null);
       return tx.delovnaNaloga.findUnique({ where: { id }, include: includeNaloga() });
     });
@@ -597,8 +627,39 @@ app.patch("/api/naloge/:id/potrdi", permit("admin"), async (req, res) => {
     if (!naloga.materiali.length) throw new Error("Za potrditev mora biti dodan vsaj en material.");
     const cena = toNumber(naloga.cena_dela_neto, 0);
     if (!cena || cena <= 0) throw new Error("Za potrditev mora biti vpisana cena dela (> 0).");
-    const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "potrjena" }, include: includeNaloga() });
+    const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "potrjena", potrjena_at: new Date() }, include: includeNaloga() });
     res.json(sanitizeNaloga(updated));
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete("/api/naloge/:id/slike/:slikaId", permit("admin", "grega"), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const slikaId = Number(req.params.slikaId);
+    const slika = await prisma.delovnaNalogaSlika.findFirst({ where: { id: slikaId, delovna_naloga_id: id } });
+    if (!slika) return res.status(404).json({ message: "Slika ne obstaja." });
+    await deleteNalogaStorageUrls([slika.url]);
+    await prisma.delovnaNalogaSlika.delete({ where: { id: slika.id } });
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.post("/api/maintenance/cleanup-naloga-slike", permit("admin"), async (req, res) => {
+  try {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const naloge = await prisma.delovnaNaloga.findMany({
+      where: { status: "potrjena", potrjena_at: { lte: cutoff }, slike: { some: {} } },
+      include: { slike: true }
+    });
+    const slike = naloge.flatMap((naloga) => naloga.slike);
+    await deleteNalogaStorageUrls(slike.map((slika) => slika.url));
+    await prisma.delovnaNalogaSlika.deleteMany({ where: { id: { in: slike.map((slika) => slika.id) } } });
+    res.json({ ok: true, deleted: slike.length, naloge: naloge.length });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
