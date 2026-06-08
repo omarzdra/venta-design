@@ -44,6 +44,7 @@ export const api = {
   nakupi: (params) => request(`/api/nakupi${query(params)}`),
   createNakup: (payload) => request("/api/nakupi", { method: "POST", body: JSON.stringify(payload) }),
   naloge: (params) => request(`/api/naloge${query(params)}`),
+  naloga: (id) => request(`/api/naloge/${id}`),
   createNaloga: (payload) => request("/api/naloge", { method: "POST", body: JSON.stringify(payload) }),
   updateNaloga: (id, payload) => request(`/api/naloge/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   uploadNalogaSlika: (payload) => request("/api/naloge/slike/upload", { method: "POST", body: JSON.stringify(payload) }),

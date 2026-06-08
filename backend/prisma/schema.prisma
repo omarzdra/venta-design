@@ -22,6 +22,8 @@ model Produkt {
 
   lotProdukti    LotProdukt[]
   nakupPostavke  NakupPostavka[]
+
+  @@index([naziv_produkta])
 }
 
 model LotProdukt {
@@ -38,6 +40,10 @@ model LotProdukt {
   nakupPostavka   NakupPostavka? @relation("LotFromPostavka")
   materialiNalog  DelovnaNalogaMaterial[]
   inventuraLoti   InventuraLot[]
+
+  @@index([produkt_id])
+  @@index([datum_prevzema])
+  @@index([kolicina_tm])
 }
 
 model Nakup {
@@ -50,6 +56,9 @@ model Nakup {
   created_at      DateTime  @default(now())
 
   postavke        NakupPostavka[]
+
+  @@index([datum])
+  @@index([stevilka_racuna])
 }
 
 model NakupPostavka {
@@ -69,6 +78,9 @@ model NakupPostavka {
   nakup           Nakup       @relation(fields: [nakup_id], references: [id], onDelete: Cascade)
   produkt         Produkt?    @relation(fields: [produkt_id], references: [id])
   lotProdukt      LotProdukt? @relation("LotFromPostavka", fields: [lot_produkt_id], references: [id])
+
+  @@index([nakup_id])
+  @@index([produkt_id])
 }
 
 model DelovnaNaloga {
@@ -97,6 +109,11 @@ model DelovnaNaloga {
   slike                     DelovnaNalogaSlika[]
   storitve                  DelovnaNalogaStoritev[]
   dnevniStrosek             DelovnaNalogaDnevniStrosek?
+
+  @@index([tip, status, datum])
+  @@index([datum])
+  @@index([stevilka_delovnega_naloga])
+  @@index([potrjena_at])
 }
 
 model Storitev {
@@ -106,6 +123,8 @@ model Storitev {
   created_at DateTime @default(now())
 
   nalogaStoritve DelovnaNalogaStoritev[]
+
+  @@index([naziv])
 }
 
 model DelovnaNalogaStoritev {
@@ -117,6 +136,9 @@ model DelovnaNalogaStoritev {
 
   naloga   DelovnaNaloga @relation(fields: [delovna_naloga_id], references: [id], onDelete: Cascade)
   storitev Storitev      @relation(fields: [storitev_id], references: [id])
+
+  @@index([delovna_naloga_id])
+  @@index([storitev_id])
 }
 
 model DelovnaNalogaDnevniStrosek {
@@ -145,6 +167,8 @@ model DelovnaNalogaPoskodba {
   opis              String
 
   naloga            DelovnaNaloga @relation(fields: [delovna_naloga_id], references: [id], onDelete: Cascade)
+
+  @@index([delovna_naloga_id])
 }
 
 model DelovnaNalogaMaterial {
@@ -155,6 +179,9 @@ model DelovnaNalogaMaterial {
 
   naloga            DelovnaNaloga @relation(fields: [delovna_naloga_id], references: [id], onDelete: Cascade)
   lotProdukt        LotProdukt    @relation(fields: [lot_produkt_id], references: [id])
+
+  @@index([delovna_naloga_id])
+  @@index([lot_produkt_id])
 }
 
 model DelovnaNalogaSlika {
@@ -163,6 +190,8 @@ model DelovnaNalogaSlika {
   url               String
 
   naloga            DelovnaNaloga @relation(fields: [delovna_naloga_id], references: [id], onDelete: Cascade)
+
+  @@index([delovna_naloga_id])
 }
 
 model PrihodekManual {
@@ -175,6 +204,9 @@ model PrihodekManual {
   ddv             Float
   bruto_znesek    Decimal   @db.Decimal(12, 2)
   created_at      DateTime  @default(now())
+
+  @@index([datum])
+  @@index([stevilka_racuna])
 }
 
 model Inventura {
@@ -184,6 +216,8 @@ model Inventura {
   created_at DateTime @default(now())
 
   loti InventuraLot[]
+
+  @@index([datum])
 }
 
 model InventuraLot {
@@ -194,4 +228,7 @@ model InventuraLot {
 
   inventura  Inventura  @relation(fields: [inventura_id], references: [id], onDelete: Cascade)
   lotProdukt LotProdukt @relation(fields: [lot_produkt_id], references: [id])
+
+  @@index([inventura_id])
+  @@index([lot_produkt_id])
 }

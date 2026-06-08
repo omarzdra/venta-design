@@ -154,6 +154,24 @@ function includeNaloga() {
   };
 }
 
+function nalogaListSelect() {
+  return {
+    id: true,
+    tip: true,
+    stevilka_delovnega_naloga: true,
+    naziv_projekta: true,
+    status: true,
+    stevilka_racuna: true,
+    opis: true,
+    kontakt_ime: true,
+    datum: true,
+    cena_dela_neto: true,
+    cena_dela_bruto: true,
+    cena_materiala: true,
+    vozilo: { select: { registrska_stevilka: true, stevilka_sasije: true, znamka_vozila: true } }
+  };
+}
+
 function sanitizeNaloga(naloga) {
   if (!naloga) return naloga;
   return {
@@ -571,8 +589,8 @@ app.get("/api/naloge", permit("admin", "grega"), async (req, res) => {
       { vozilo: { is: { stevilka_sasije: { contains: q, mode: "insensitive" } } } }
     ];
   }
-  const naloge = await prisma.delovnaNaloga.findMany({ where, include: includeNaloga(), orderBy: { datum: "desc" } });
-  res.json(naloge.map(sanitizeNaloga));
+  const naloge = await prisma.delovnaNaloga.findMany({ where, select: nalogaListSelect(), orderBy: { datum: "desc" } });
+  res.json(naloge);
 });
 
 app.get("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
