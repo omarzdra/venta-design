@@ -37,6 +37,7 @@ model LotProdukt {
   produkt         Produkt       @relation(fields: [produkt_id], references: [id])
   nakupPostavka   NakupPostavka? @relation("LotFromPostavka")
   materialiNalog  DelovnaNalogaMaterial[]
+  inventuraLoti   InventuraLot[]
 }
 
 model Nakup {
@@ -93,6 +94,38 @@ model DelovnaNaloga {
   poskodbe                  DelovnaNalogaPoskodba[]
   materiali                 DelovnaNalogaMaterial[]
   slike                     DelovnaNalogaSlika[]
+  storitve                  DelovnaNalogaStoritev[]
+  dnevniStrosek             DelovnaNalogaDnevniStrosek?
+}
+
+model Storitev {
+  id         Int      @id @default(autoincrement())
+  naziv      String
+  eur_ura    Decimal  @db.Decimal(12, 2)
+  created_at DateTime @default(now())
+
+  nalogaStoritve DelovnaNalogaStoritev[]
+}
+
+model DelovnaNalogaStoritev {
+  id                Int     @id @default(autoincrement())
+  delovna_naloga_id Int
+  storitev_id       Int
+  stevilo_ur        Float
+  cena_skupaj       Decimal @db.Decimal(12, 2)
+
+  naloga   DelovnaNaloga @relation(fields: [delovna_naloga_id], references: [id], onDelete: Cascade)
+  storitev Storitev      @relation(fields: [storitev_id], references: [id])
+}
+
+model DelovnaNalogaDnevniStrosek {
+  id                Int     @id @default(autoincrement())
+  delovna_naloga_id Int     @unique
+  dnevni_strosek    Decimal @db.Decimal(12, 2)
+  stevilo_dni       Int
+  skupaj            Decimal @db.Decimal(12, 2)
+
+  naloga DelovnaNaloga @relation(fields: [delovna_naloga_id], references: [id], onDelete: Cascade)
 }
 
 model Vozilo {
@@ -141,4 +174,23 @@ model PrihodekManual {
   ddv             Float
   bruto_znesek    Decimal   @db.Decimal(12, 2)
   created_at      DateTime  @default(now())
+}
+
+model Inventura {
+  id         Int      @id @default(autoincrement())
+  datum      DateTime
+  zakljucena Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  loti InventuraLot[]
+}
+
+model InventuraLot {
+  id             Int     @id @default(autoincrement())
+  inventura_id   Int
+  lot_produkt_id Int
+  oznacen        Boolean @default(false)
+
+  inventura  Inventura  @relation(fields: [inventura_id], references: [id], onDelete: Cascade)
+  lotProdukt LotProdukt @relation(fields: [lot_produkt_id], references: [id])
 }

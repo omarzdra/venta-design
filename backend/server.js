@@ -40,7 +40,7 @@ app.use(express.json({ limit: "15mb" }));
 
 const DDV = [0, 9.5, 22];
 const STATUSES = ["v_izdelavi", "dokoncana", "potrjena"];
-const PRODUCT_TYPES = ["folija", "adr"];
+const PRODUCT_TYPES = ["folija", "adr", "tabla"];
 const PURCHASE_CATEGORIES = ["material", "oprema", "lizing", "gorivo", "bancni_stroski", "place", "smeti", "telefon", "najemnina", "posta", "mehanik", "oglasevanje", "pripomocki", "zavarovanje", "drugo"];
 const STATUS_RANK = { v_izdelavi: 0, dokoncana: 1, potrjena: 2 };
 
@@ -85,14 +85,17 @@ function assertDdv(value) {
   return ddv;
 }
 
-function calcM2(tm, sirina) {
-  return sirina ? Number(tm || 0) * Number(sirina) : null;
+function calcM2(tm, produktOrSirina) {
+  if (produktOrSirina && typeof produktOrSirina === "object") {
+    if (produktOrSirina.tip === "tabla") return Number(tm || 0);
+    return produktOrSirina.sirina ? Number(tm || 0) * Number(produktOrSirina.sirina) : null;
+  }
+  return produktOrSirina ? Number(tm || 0) * Number(produktOrSirina) : null;
 }
 
 function calcMaterialValue(material) {
   const lot = material.lotProdukt;
-  const sirina = lot.produkt?.sirina;
-  const qty = sirina ? Number(material.kolicina_tm) * Number(sirina) : Number(material.kolicina_tm);
+  const qty = calcM2(material.kolicina_tm, lot.produkt) ?? Number(material.kolicina_tm);
   return qty * Number(lot.prodajna_cena || lot.produkt?.prodajna_cena || 0);
 }
 
@@ -101,7 +104,9 @@ function includeNaloga() {
     vozilo: true,
     poskodbe: true,
     slike: true,
-    materiali: { include: { lotProdukt: { include: { produkt: true } } } }
+    materiali: { include: { lotProdukt: { include: { produkt: true } } } },
+    storitve: { include: { storitev: true } },
+    dnevniStrosek: true
   };
 }
 
@@ -111,7 +116,7 @@ function sanitizeNaloga(naloga) {
     ...naloga,
     materiali: (naloga.materiali || []).map((m) => ({
       ...m,
-      kolicina_m2: calcM2(m.kolicina_tm, m.lotProdukt?.produkt?.sirina),
+      kolicina_m2: calcM2(m.kolicina_tm, m.lotProdukt?.produkt),
       vrednost: calcMaterialValue(m)
     }))
   };
@@ -164,19 +169,63 @@ app.get("/api/produkti", async (req, res) => {
 app.post("/api/produkti", permit("admin"), async (req, res) => {
   try {
     requireFields(req.body, ["koda", "naziv_produkta", "tip", "nabavna_cena", "prodajna_cena"]);
-    if (!PRODUCT_TYPES.includes(req.body.tip)) throw new Error("Tip produkta mora biti folija ali adr.");
+    if (!PRODUCT_TYPES.includes(req.body.tip)) throw new Error("Tip produkta mora biti folija, adr ali tabla.");
     const produkt = await prisma.produkt.create({
       data: {
         koda: String(req.body.koda).trim(),
         naziv_produkta: String(req.body.naziv_produkta).trim(),
         tip: req.body.tip,
-        sirina: req.body.tip === "adr" ? null : toNumber(req.body.sirina),
+        sirina: req.body.tip === "folija" ? toNumber(req.body.sirina) : null,
         nabavna_cena: moneyInput(req.body.nabavna_cena, 0),
         prodajna_cena: moneyInput(req.body.prodajna_cena, 0),
         dobavitelj: req.body.dobavitelj || null
       }
     });
     res.status(201).json(produkt);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.get("/api/storitve", async (req, res) => {
+  const storitve = await prisma.storitev.findMany({ orderBy: { naziv: "asc" } });
+  res.json(storitve);
+});
+
+app.post("/api/storitve", permit("admin"), async (req, res) => {
+  try {
+    requireFields(req.body, ["naziv", "eur_ura"]);
+    const storitev = await prisma.storitev.create({
+      data: {
+        naziv: String(req.body.naziv).trim(),
+        eur_ura: moneyInput(req.body.eur_ura, 0)
+      }
+    });
+    res.status(201).json(storitev);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.put("/api/storitve/:id", permit("admin"), async (req, res) => {
+  try {
+    const storitev = await prisma.storitev.update({
+      where: { id: Number(req.params.id) },
+      data: {
+        naziv: req.body.naziv ? String(req.body.naziv).trim() : undefined,
+        eur_ura: req.body.eur_ura !== undefined ? moneyInput(req.body.eur_ura, 0) : undefined
+      }
+    });
+    res.json(storitev);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete("/api/storitve/:id", permit("admin"), async (req, res) => {
+  try {
+    await prisma.storitev.delete({ where: { id: Number(req.params.id) } });
+    res.json({ ok: true });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -190,7 +239,7 @@ app.get("/api/zaloga", async (req, res) => {
 
   res.json(produkti.map((p) => {
     const lots = p.lotProdukti.map((lot) => {
-      const kolicina_m2 = calcM2(lot.kolicina_tm, p.sirina);
+      const kolicina_m2 = calcM2(lot.kolicina_tm, p);
       const qty = kolicina_m2 ?? Number(lot.kolicina_tm);
       return { ...lot, kolicina_m2, vrednost_zaloge: qty * Number(lot.nabavna_cena || 0) };
     });
@@ -210,12 +259,68 @@ app.get("/api/lot_produkti", async (req, res) => {
   const where = { kolicina_tm: { gt: 0 } };
   if (req.query.produkt_id) where.produkt_id = Number(req.query.produkt_id);
   const lots = await prisma.lotProdukt.findMany({ where, include: { produkt: true }, orderBy: { datum_prevzema: "desc" } });
-  res.json(lots.map((lot) => ({ ...lot, kolicina_m2: calcM2(lot.kolicina_tm, lot.produkt.sirina) })));
+  res.json(lots.map((lot) => ({ ...lot, kolicina_m2: calcM2(lot.kolicina_tm, lot.produkt) })));
 });
 
 app.patch("/api/lot_produkti/:id/lot_stevilka", permit("admin", "racunovodkinja"), async (req, res) => {
   const lot = await prisma.lotProdukt.update({ where: { id: Number(req.params.id) }, data: { lot_stevilka: req.body.lot_stevilka || null } });
   res.json(lot);
+});
+
+app.get("/api/inventure", permit("admin", "racunovodkinja"), async (req, res) => {
+  const inventure = await prisma.inventura.findMany({
+    orderBy: { datum: "desc" },
+    include: { loti: { include: { lotProdukt: { include: { produkt: true } } } } }
+  });
+  res.json(inventure);
+});
+
+app.post("/api/inventure", permit("admin", "racunovodkinja"), async (req, res) => {
+  try {
+    requireFields(req.body, ["datum"]);
+    const activeLots = await prisma.lotProdukt.findMany({ where: { kolicina_tm: { gt: 0 } } });
+    const inventura = await prisma.$transaction(async (tx) => {
+      const created = await tx.inventura.create({ data: { datum: dateOnly(req.body.datum) } });
+      for (const lot of activeLots) {
+        await tx.inventuraLot.create({
+          data: { inventura_id: created.id, lot_produkt_id: lot.id, oznacen: false }
+        });
+      }
+      return tx.inventura.findUnique({
+        where: { id: created.id },
+        include: { loti: { include: { lotProdukt: { include: { produkt: true } } } } }
+      });
+    });
+    res.status(201).json(inventura);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.patch("/api/inventure/:invId/lot/:lotId", permit("admin", "racunovodkinja"), async (req, res) => {
+  try {
+    const inventuraId = Number(req.params.invId);
+    const lotId = Number(req.params.lotId);
+    const updated = await prisma.$transaction(async (tx) => {
+      const record = await tx.inventuraLot.findFirst({
+        where: { inventura_id: inventuraId, lot_produkt_id: lotId }
+      });
+      if (!record) throw new Error("Zapis ne obstaja.");
+      const next = await tx.inventuraLot.update({
+        where: { id: record.id },
+        data: { oznacen: !record.oznacen }
+      });
+      const invLoti = await tx.inventuraLot.findMany({ where: { inventura_id: inventuraId } });
+      await tx.inventura.update({
+        where: { id: inventuraId },
+        data: { zakljucena: invLoti.every((l) => l.id === next.id ? next.oznacen : l.oznacen) }
+      });
+      return next;
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 });
 
 app.get("/api/nakupi", permit("admin"), async (req, res) => {
@@ -256,7 +361,8 @@ app.post("/api/nakupi", permit("admin"), async (req, res) => {
           produkt = await tx.produkt.findUnique({ where: { id: Number(p.produkt_id) } });
           if (!produkt) throw new Error("Produkt ne obstaja.");
           if (!kolicina_tm && p.kolicina_m2 && produkt.sirina) kolicina_tm = Number(p.kolicina_m2) / Number(produkt.sirina);
-          kolicina_m2 = produkt.sirina ? Number(kolicina_tm || 0) * Number(produkt.sirina) : null;
+          if (!kolicina_tm && p.kolicina_m2 && produkt.tip === "tabla") kolicina_tm = Number(p.kolicina_m2);
+          kolicina_m2 = calcM2(kolicina_tm || 0, produkt);
         }
         prepared.push({ p, produkt, neto, ddv, bruto, kolicina_tm, kolicina_m2 });
       }
@@ -312,7 +418,7 @@ app.post("/api/nakupi", permit("admin"), async (req, res) => {
   }
 });
 
-async function syncNalogaMaterials(tx, nalogaId, nextMaterials) {
+async function syncNalogaMaterials(tx, nalogaId, nextMaterials, nextStoritve = [], nextDnevniStrosek = null) {
   const existing = await tx.delovnaNalogaMaterial.findMany({ where: { delovna_naloga_id: nalogaId } });
   for (const old of existing) {
     await tx.lotProdukt.update({ where: { id: old.lot_produkt_id }, data: { kolicina_tm: { increment: old.kolicina_tm } } });
@@ -336,17 +442,46 @@ async function syncNalogaMaterials(tx, nalogaId, nextMaterials) {
   const materials = await tx.delovnaNalogaMaterial.findMany({ where: { delovna_naloga_id: nalogaId }, include: { lotProdukt: { include: { produkt: true } } } });
   const cena_materiala = materials.reduce((sum, material) => sum + calcMaterialValue(material), 0);
   await tx.delovnaNaloga.update({ where: { id: nalogaId }, data: { cena_materiala: moneyInput(cena_materiala, 0) } });
+
+  await tx.delovnaNalogaStoritev.deleteMany({ where: { delovna_naloga_id: nalogaId } });
+  for (const s of nextStoritve || []) {
+    const storitev = await tx.storitev.findUnique({ where: { id: Number(s.storitev_id) } });
+    if (!storitev) throw new Error("Storitev ne obstaja.");
+    const ure = toNumber(s.stevilo_ur, 0);
+    if (ure <= 0) continue;
+    await tx.delovnaNalogaStoritev.create({
+      data: {
+        delovna_naloga_id: nalogaId,
+        storitev_id: storitev.id,
+        stevilo_ur: ure,
+        cena_skupaj: moneyInput(ure * Number(storitev.eur_ura), 0)
+      }
+    });
+  }
+
+  await tx.delovnaNalogaDnevniStrosek.deleteMany({ where: { delovna_naloga_id: nalogaId } });
+  if (nextDnevniStrosek && toNumber(nextDnevniStrosek.dnevni_strosek) > 0) {
+    const ds = toNumber(nextDnevniStrosek.dnevni_strosek, 0);
+    const dni = Math.max(1, parseInt(nextDnevniStrosek.stevilo_dni, 10) || 1);
+    await tx.delovnaNalogaDnevniStrosek.create({
+      data: {
+        delovna_naloga_id: nalogaId,
+        dnevni_strosek: moneyInput(ds, 0),
+        stevilo_dni: dni,
+        skupaj: moneyInput(ds * dni, 0)
+      }
+    });
+  }
 }
 
 function nalogaPayload(body, isCreate = false, current = null, role = "admin") {
-  if (isCreate) requireFields(body, ["tip", "stevilka_delovnega_naloga", "naziv_projekta", "kontakt_ime"]);
+  if (isCreate) requireFields(body, ["tip", "naziv_projekta", "kontakt_ime"]);
   if (body.tip && !["splosno", "vozila"].includes(body.tip)) throw new Error("Tip naloge mora biti splosno ali vozila.");
   const status = body.status || current?.status || "v_izdelavi";
   if (!STATUSES.includes(status)) throw new Error("Neveljaven status naloge.");
   if (current && STATUS_RANK[status] < STATUS_RANK[current.status]) throw new Error("Statusa ni dovoljeno vračati nazaj.");
 
   const data = {
-    stevilka_delovnega_naloga: body.stevilka_delovnega_naloga,
     naziv_projekta: body.naziv_projekta,
     opis: body.opis || null,
     opomba: body.opomba || null,
@@ -355,9 +490,17 @@ function nalogaPayload(body, isCreate = false, current = null, role = "admin") {
     kontakt_email: body.kontakt_email || null
   };
   if (isCreate) data.tip = body.tip;
+  if (isCreate) data.stevilka_delovnega_naloga = "pending";
   if (role === "admin") {
     data.status = status;
     data.stevilka_racuna = body.stevilka_racuna || null;
+    if (body.cena_dela_neto !== undefined) {
+      const cena = toNumber(body.cena_dela_neto, 0);
+      const ddv = assertDdv(body.ddv_stopnja ?? 22);
+      data.cena_dela_neto = cena > 0 ? moneyInput(cena, 0) : null;
+      data.ddv_stopnja = ddv;
+      data.cena_dela_bruto = cena > 0 ? moneyInput(cena * (1 + ddv / 100), 0) : null;
+    }
   }
   return data;
 }
@@ -393,13 +536,14 @@ app.post("/api/naloge", permit("admin", "grega"), async (req, res) => {
   try {
     const created = await prisma.$transaction(async (tx) => {
       const naloga = await tx.delovnaNaloga.create({ data: nalogaPayload(req.body, true, null, req.user.role) });
+      await tx.delovnaNaloga.update({ where: { id: naloga.id }, data: { stevilka_delovnega_naloga: String(naloga.id) } });
       if (req.body.tip === "vozila") {
         requireFields(req.body.vozilo || {}, ["stevilka_sasije", "znamka_vozila"]);
         await tx.vozilo.create({ data: { delovna_naloga_id: naloga.id, registrska_stevilka: req.body.vozilo.registrska_stevilka || null, stevilka_sasije: req.body.vozilo.stevilka_sasije, znamka_vozila: req.body.vozilo.znamka_vozila } });
         for (const opis of req.body.poskodbe || []) await tx.delovnaNalogaPoskodba.create({ data: { delovna_naloga_id: naloga.id, opis } });
       }
       for (const url of req.body.slike || []) await tx.delovnaNalogaSlika.create({ data: { delovna_naloga_id: naloga.id, url: String(url) } });
-      await syncNalogaMaterials(tx, naloga.id, req.body.materiali || []);
+      await syncNalogaMaterials(tx, naloga.id, req.body.materiali || [], req.body.storitve || [], req.body.dnevniStrosek || null);
       return tx.delovnaNaloga.findUnique({ where: { id: naloga.id }, include: includeNaloga() });
     });
     res.status(201).json(sanitizeNaloga(created));
@@ -422,7 +566,7 @@ app.put("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
       }
       await tx.delovnaNalogaSlika.deleteMany({ where: { delovna_naloga_id: id } });
       for (const url of req.body.slike || []) await tx.delovnaNalogaSlika.create({ data: { delovna_naloga_id: id, url: String(url) } });
-      await syncNalogaMaterials(tx, id, req.body.materiali || []);
+      await syncNalogaMaterials(tx, id, req.body.materiali || [], req.body.storitve || [], req.body.dnevniStrosek || null);
       return tx.delovnaNaloga.findUnique({ where: { id }, include: includeNaloga() });
     });
     res.json(sanitizeNaloga(updated));
@@ -451,10 +595,9 @@ app.patch("/api/naloge/:id/potrdi", permit("admin"), async (req, res) => {
     if (!naloga) return res.status(404).json({ message: "Naloga ne obstaja." });
     if (!naloga.stevilka_racuna) throw new Error("Za potrditev mora biti vpisana številka računa.");
     if (!naloga.materiali.length) throw new Error("Za potrditev mora biti dodan vsaj en material.");
-    const cena = toNumber(req.body.cena_dela_neto);
-    if (!cena || cena <= 0) throw new Error("Vnesi ceno dela.");
-    const ddv = assertDdv(req.body.ddv_stopnja ?? 22);
-    const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "potrjena", cena_dela_neto: moneyInput(cena, 0), ddv_stopnja: ddv, cena_dela_bruto: moneyInput(cena * (1 + ddv / 100), 0) }, include: includeNaloga() });
+    const cena = toNumber(naloga.cena_dela_neto, 0);
+    if (!cena || cena <= 0) throw new Error("Za potrditev mora biti vpisana cena dela (> 0).");
+    const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "potrjena" }, include: includeNaloga() });
     res.json(sanitizeNaloga(updated));
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -504,8 +647,18 @@ app.get("/api/analiza/summary", permit("admin"), async (req, res) => {
 
 app.get("/api/analiza/prodaja", permit("admin"), async (req, res) => {
   const dateWhere = dateRangeWhere(req.query.datum_od, req.query.datum_do);
+  const search = req.query.search ? String(req.query.search) : "";
+  const nalogeWhere = { status: "potrjena", ...dateWhere };
+  if (search) {
+    nalogeWhere.OR = [
+      { kontakt_ime: { contains: search, mode: "insensitive" } },
+      { stevilka_delovnega_naloga: { contains: search, mode: "insensitive" } },
+      { materiali: { some: { lotProdukt: { produkt: { naziv_produkta: { contains: search, mode: "insensitive" } } } } } },
+      { materiali: { some: { lotProdukt: { produkt: { koda: { contains: search, mode: "insensitive" } } } } } }
+    ];
+  }
   const [naloge, prihodki] = await Promise.all([
-    prisma.delovnaNaloga.findMany({ where: { status: "potrjena", ...dateWhere }, include: includeNaloga(), orderBy: { datum: "desc" } }),
+    prisma.delovnaNaloga.findMany({ where: nalogeWhere, include: includeNaloga(), orderBy: { datum: "desc" } }),
     prisma.prihodekManual.findMany({ where: dateWhere, orderBy: { datum: "desc" } })
   ]);
   res.json([
