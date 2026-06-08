@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const crypto = require("crypto");
 const { PrismaClient } = require("@prisma/client");
 const { createClient } = require("@supabase/supabase-js");
 
@@ -88,12 +89,33 @@ function storagePathFromUrl(url, bucket = nalogaSlikeBucket) {
   }
 }
 
+function imageExtensionFromMime(mimeType) {
+  if (mimeType === "image/png") return "png";
+  if (mimeType === "image/webp") return "webp";
+  return "jpg";
+}
+
 async function deleteNalogaStorageUrls(urls = []) {
   if (!supabase) throw new Error("Supabase storage ni nastavljen na strežniku.");
   const paths = [...new Set(urls.map((url) => storagePathFromUrl(url)).filter(Boolean))];
   if (!paths.length) return;
   const { error } = await supabase.storage.from(nalogaSlikeBucket).remove(paths);
   if (error) throw error;
+}
+
+async function uploadNalogaImage(dataUrl, filename = "slika") {
+  if (!supabase) throw new Error("Supabase storage ni nastavljen na strežniku.");
+  const match = String(dataUrl || "").match(/^data:(image\/(?:png|jpeg|jpg|webp));base64,(.+)$/);
+  if (!match) throw new Error("Neveljaven format slike.");
+  const mimeType = match[1] === "image/jpg" ? "image/jpeg" : match[1];
+  const bytes = Buffer.from(match[2], "base64");
+  if (bytes.length > 5 * 1024 * 1024) throw new Error("Slika je prevelika. Največja velikost je 5 MB.");
+  const safeName = String(filename).replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+  const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}-${safeName || `slika.${imageExtensionFromMime(mimeType)}`}`;
+  const { error } = await supabase.storage.from(nalogaSlikeBucket).upload(path, bytes, { contentType: mimeType, upsert: false });
+  if (error) throw error;
+  const { data } = supabase.storage.from(nalogaSlikeBucket).getPublicUrl(path);
+  return data.publicUrl;
 }
 
 function requireFields(body, fields) {
@@ -557,6 +579,16 @@ app.get("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
   const naloga = await prisma.delovnaNaloga.findUnique({ where: { id: Number(req.params.id) }, include: includeNaloga() });
   if (!naloga) return res.status(404).json({ message: "Naloga ne obstaja." });
   res.json(sanitizeNaloga(naloga));
+});
+
+app.post("/api/naloge/slike/upload", permit("admin", "grega"), async (req, res) => {
+  try {
+    requireFields(req.body, ["dataUrl"]);
+    const url = await uploadNalogaImage(req.body.dataUrl, req.body.filename || "slika.jpg");
+    res.status(201).json({ url });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 });
 
 app.post("/api/naloge", permit("admin", "grega"), async (req, res) => {

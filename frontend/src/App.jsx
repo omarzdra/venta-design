@@ -132,18 +132,24 @@ function MaterialRows({ rows, setRows, lots }) {
 }
 
 function ImagesInput({ value, onChange, notify }) {
-  const bucket = import.meta.env.VITE_SUPABASE_IMAGE_BUCKET || "naloga-slike";
+  const readFile = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
   async function add(files) {
     const uploaded = [];
     for (const file of [...files]) {
       if (!file.type.startsWith("image/")) { notify?.("Naloziti je mogoce samo slike.", "error"); continue; }
       if (file.size > 5 * 1024 * 1024) { notify?.("Slika je prevelika. Najvecja velikost je 5 MB.", "error"); continue; }
-      const extension = file.name.split(".").pop() || "jpg";
-      const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;
-      const { error } = await supabase.storage.from(bucket).upload(path, file, { contentType: file.type, upsert: false });
-      if (error) { notify?.(error.message, "error"); continue; }
-      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-      uploaded.push(data.publicUrl);
+      try {
+        const dataUrl = await readFile(file);
+        const { url } = await api.uploadNalogaSlika({ dataUrl, filename: file.name });
+        uploaded.push(url);
+      } catch (error) {
+        notify?.(error.message, "error");
+      }
     }
     if (uploaded.length) onChange([...value, ...uploaded]);
   }
@@ -357,11 +363,11 @@ export default function App() {
   const notify = useCallback((message, type = "success") => { setToast({ message, type }); setTimeout(() => setToast(null), 5000); }, []);
   const loadData = useCallback(async function loadData() { const [z, p, l, s] = await Promise.all([api.zaloga(), api.produkti(), api.lots(), api.storitve()]); setZaloga(z); setProdukti(p); setLots(l); setStoritve(s); }, []);
   const loadUser = useCallback(async function loadUser() { const profile = await api.me(); setUser(profile); return profile; }, []);
-  const boot = useCallback(async function boot(session) { setLoading(true); try { if (session) { await loadUser(); await loadData().catch((e) => notify(e.message, "error")); } else { setUser(null); } } catch { setUser(null); } finally { setLoading(false); } }, [loadData, loadUser, notify]);
-  useEffect(() => { let mounted = true; supabase.auth.getSession().then(({ data }) => { if (mounted) boot(data.session); }).catch((e) => { if (mounted) { notify(e.message, "error"); setLoading(false); } }); const { data } = supabase.auth.onAuthStateChange((_event, session) => { setTimeout(() => { if (mounted) boot(session); }, 0); }); return () => { mounted = false; data.subscription.unsubscribe(); }; }, [boot, notify]);
+  const boot = useCallback(async function boot(session, showLoading = false) { if (showLoading) setLoading(true); try { if (session) { await loadUser(); await loadData().catch((e) => notify(e.message, "error")); } else { setUser(null); } } catch { setUser(null); } finally { if (showLoading) setLoading(false); } }, [loadData, loadUser, notify]);
+  useEffect(() => { let mounted = true; supabase.auth.getSession().then(({ data }) => { if (mounted) boot(data.session, true); }).catch((e) => { if (mounted) { notify(e.message, "error"); setLoading(false); } }); const { data } = supabase.auth.onAuthStateChange((_event, session) => { setTimeout(() => { if (mounted) boot(session, false); }, 0); }); return () => { mounted = false; data.subscription.unsubscribe(); }; }, [boot, notify]);
   async function logout() { await supabase.auth.signOut(); setUser(null); }
   const initialNaloga = preneseniPodatki;
   if (loading) return <div className="app"><LoadingPopup /></div>;
   if (!user) return <><LoginPage notify={notify} onLogin={async () => { await loadUser(); await loadData(); }} /><Toast toast={toast} /></>;
-  return <div className="app"><Header user={user} tab={tab} setTab={setTab} logout={logout} /><main className="content">{tab === "zaloga" && <ZalogaView data={zaloga} role={user.role} reload={loadData} notify={notify} />}{tab === "naloge" && <NalogaForm key={initialNaloga ? "prenesi" : "new"} initial={initialNaloga || undefined} lots={lots} storitve={storitve} role={user.role} notify={notify} onSave={async (payload) => { await api.createNaloga(payload); setPreneseniPodatki(null); notify("Delovni nalog je ustvarjen."); await loadData(); }} />}{tab === "evidenca" && <EvidenceView lots={lots} storitve={storitve} role={user.role} reload={loadData} notify={notify} />}{tab === "storitve" && <StoritveView storitve={storitve} reload={loadData} notify={notify} />}{tab === "ponudba" && <PonudbaView produkti={produkti} lots={lots} storitve={storitve} setPreneseniPodatki={setPreneseniPodatki} setTab={setTab} />}{tab === "analiza" && <AnalysisView produkti={produkti} reload={loadData} notify={notify} role={user.role} />}</main><Toast toast={toast} /></div>;
+  return <div className="app"><Header user={user} tab={tab} setTab={setTab} logout={logout} /><main className="content">{tab === "zaloga" && <ZalogaView data={zaloga} role={user.role} reload={loadData} notify={notify} />}{tab === "naloge" && <NalogaForm key={initialNaloga ? "prenesi" : "new"} initial={initialNaloga || undefined} lots={lots} storitve={storitve} role={user.role} notify={notify} onSave={async (payload) => { const created = await api.createNaloga(payload); setPreneseniPodatki(null); notify(`Delovni nalog st. ${created.stevilka_delovnega_naloga} je ustvarjen.`); await loadData(); }} />}{tab === "evidenca" && <EvidenceView lots={lots} storitve={storitve} role={user.role} reload={loadData} notify={notify} />}{tab === "storitve" && <StoritveView storitve={storitve} reload={loadData} notify={notify} />}{tab === "ponudba" && <PonudbaView produkti={produkti} lots={lots} storitve={storitve} setPreneseniPodatki={setPreneseniPodatki} setTab={setTab} />}{tab === "analiza" && <AnalysisView produkti={produkti} reload={loadData} notify={notify} role={user.role} />}</main><Toast toast={toast} /></div>;
 }

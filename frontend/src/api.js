@@ -46,6 +46,7 @@ export const api = {
   naloge: (params) => request(`/api/naloge${query(params)}`),
   createNaloga: (payload) => request("/api/naloge", { method: "POST", body: JSON.stringify(payload) }),
   updateNaloga: (id, payload) => request(`/api/naloge/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  uploadNalogaSlika: (payload) => request("/api/naloge/slike/upload", { method: "POST", body: JSON.stringify(payload) }),
   dokoncajNaloga: (id) => request(`/api/naloge/${id}/dokoncaj`, { method: "PATCH", body: JSON.stringify({}) }),
   potrdiNaloga: (id, payload) => request(`/api/naloge/${id}/potrdi`, { method: "PATCH", body: JSON.stringify(payload) }),
   deleteNalogaSlika: (nalogaId, slikaId) => request(`/api/naloge/${nalogaId}/slike/${slikaId}`, { method: "DELETE" }),
