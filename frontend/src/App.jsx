@@ -179,21 +179,55 @@ function MaterialRows({ rows, setRows, lots }) {
   return <div className="form-section"><div className="section-head"><h3>Poraba materiala</h3><button type="button" className="btn secondary" onClick={() => setRows([...rows, { lot_produkt_id: "", kolicina_tm: "", kolicina_m2: "" }])}>+ Dodaj material</button></div>{rows.map((row, i) => <MaterialRowItem key={i} idx={i} row={row} lots={lots} update={update} remove={remove} />)}<div className="total-line">Vrednost materiala skupaj: <strong>{money(calcMaterialTotal(rows, lots))}</strong></div>{overStock && <div className="alert-inline">Popravi porabo materiala, ker ena od vrstic presega zalogo.</div>}</div>;
 }
 
-function ImagesInput({ value, onChange, notify }) {
-  const readFile = (file) => new Promise((resolve, reject) => {
+const IMAGE_MAX_SIZE = 1600;
+const IMAGE_QUALITY = 0.75;
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+}
+
+async function compressImage(file) {
+  const originalDataUrl = await readFileAsDataUrl(file);
+  try {
+    const image = await loadImage(originalDataUrl);
+    const scale = Math.min(IMAGE_MAX_SIZE / image.width, IMAGE_MAX_SIZE / image.height, 1);
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) return { dataUrl: originalDataUrl, filename: file.name };
+    context.drawImage(image, 0, 0, width, height);
+    return { dataUrl: canvas.toDataURL("image/jpeg", IMAGE_QUALITY), filename: file.name.replace(/\.[^.]+$/, "") + ".jpg" };
+  } catch {
+    return { dataUrl: originalDataUrl, filename: file.name };
+  }
+}
+
+function ImagesInput({ value, onChange, notify }) {
   async function add(files) {
     const uploaded = [];
     for (const file of [...files]) {
       if (!file.type.startsWith("image/")) { notify?.("Naloziti je mogoce samo slike.", "error"); continue; }
       if (file.size > 5 * 1024 * 1024) { notify?.("Slika je prevelika. Najvecja velikost je 5 MB.", "error"); continue; }
       try {
-        const dataUrl = await readFile(file);
-        const { url } = await api.uploadNalogaSlika({ dataUrl, filename: file.name });
+        const compressed = await compressImage(file);
+        const { url } = await api.uploadNalogaSlika(compressed);
         uploaded.push(url);
       } catch (error) {
         notify?.(error.message, "error");
