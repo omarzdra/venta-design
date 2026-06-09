@@ -351,20 +351,29 @@ app.patch("/api/lot_produkti/:id/lot_stevilka", permit("admin", "racunovodkinja"
 app.get("/api/inventure", permit("admin", "racunovodkinja"), async (req, res) => {
   const inventure = await prisma.inventura.findMany({
     orderBy: { datum: "desc" },
-    include: { loti: { include: { lotProdukt: { include: { produkt: true } } } } }
+    select: { id: true, datum: true, zakljucena: true, created_at: true, _count: { select: { loti: true } } }
   });
-  res.json(inventure);
+  res.json(inventure.map((inv) => ({ ...inv, loti_count: inv._count.loti })));
+});
+
+app.get("/api/inventure/:id", permit("admin", "racunovodkinja"), async (req, res) => {
+  const inventura = await prisma.inventura.findUnique({
+    where: { id: Number(req.params.id) },
+    include: { loti: { include: { lotProdukt: { include: { produkt: true } } }, orderBy: { id: "asc" } } }
+  });
+  if (!inventura) return res.status(404).json({ message: "Inventura ne obstaja." });
+  res.json(inventura);
 });
 
 app.post("/api/inventure", permit("admin", "racunovodkinja"), async (req, res) => {
   try {
     requireFields(req.body, ["datum"]);
-    const activeLots = await prisma.lotProdukt.findMany({ where: { kolicina_tm: { gt: 0 } } });
+    const activeLots = await prisma.lotProdukt.findMany({ where: { kolicina_tm: { gt: 0 } }, select: { id: true } });
     const inventura = await prisma.$transaction(async (tx) => {
       const created = await tx.inventura.create({ data: { datum: dateOnly(req.body.datum) } });
-      for (const lot of activeLots) {
-        await tx.inventuraLot.create({
-          data: { inventura_id: created.id, lot_produkt_id: lot.id, oznacen: false }
+      if (activeLots.length) {
+        await tx.inventuraLot.createMany({
+          data: activeLots.map((lot) => ({ inventura_id: created.id, lot_produkt_id: lot.id, oznacen: false }))
         });
       }
       return tx.inventura.findUnique({
@@ -391,12 +400,15 @@ app.patch("/api/inventure/:invId/lot/:lotId", permit("admin", "racunovodkinja"),
         where: { id: record.id },
         data: { oznacen: !record.oznacen }
       });
-      const invLoti = await tx.inventuraLot.findMany({ where: { inventura_id: inventuraId } });
-      await tx.inventura.update({
+      const [remaining, total] = await Promise.all([
+        tx.inventuraLot.count({ where: { inventura_id: inventuraId, oznacen: false } }),
+        tx.inventuraLot.count({ where: { inventura_id: inventuraId } })
+      ]);
+      const inventura = await tx.inventura.update({
         where: { id: inventuraId },
-        data: { zakljucena: invLoti.every((l) => l.id === next.id ? next.oznacen : l.oznacen) }
+        data: { zakljucena: remaining === 0 }
       });
-      return next;
+      return { ...next, zakljucena: inventura.zakljucena, done: total - remaining, total };
     });
     res.json(updated);
   } catch (error) {
@@ -411,7 +423,11 @@ app.get("/api/nakupi", permit("admin"), async (req, res) => {
   Object.assign(where, dateRangeWhere(datum_od, datum_do));
   if (znesek_od || znesek_do) where.neto_znesek = { ...(znesek_od ? { gte: Number(znesek_od) } : {}), ...(znesek_do ? { lte: Number(znesek_do) } : {}) };
   if (kategorija) where.postavke = { some: { kategorija: { in: String(kategorija).split(",") } } };
-  const nakupi = await prisma.nakup.findMany({ where, include: { postavke: { include: { produkt: true, lotProdukt: true } } }, orderBy: { datum: "desc" } });
+  const nakupi = await prisma.nakup.findMany({
+    where,
+    select: { id: true, datum: true, dobavitelj: true, stevilka_racuna: true, neto_znesek: true, bruto_znesek: true, created_at: true },
+    orderBy: { datum: "desc" }
+  });
   res.json(nakupi);
 });
 
@@ -690,7 +706,7 @@ app.patch("/api/naloge/:id/potrdi", permit("admin"), async (req, res) => {
     if (!naloga.stevilka_racuna) throw new Error("Za potrditev mora biti vpisana številka računa.");
     if (!naloga.materiali.length) throw new Error("Za potrditev mora biti dodan vsaj en material.");
     const cena = toNumber(naloga.cena_dela_neto, 0);
-    if (!cena || cena <= 0) throw new Error("Za potrditev mora biti vpisana cena dela (> 0).");
+    if (!cena || cena <= 0) throw new Error("Za potrditev mora biti vpisana cena (> 0).");
     const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "potrjena", potrjena_at: new Date() }, include: includeNaloga() });
     res.json(sanitizeNaloga(updated));
   } catch (error) {
@@ -759,14 +775,23 @@ app.post("/api/prihodki", permit("admin"), async (req, res) => {
 app.get("/api/analiza/summary", permit("admin"), async (req, res) => {
   const dateWhere = dateRangeWhere(req.query.datum_od, req.query.datum_do);
   const [naloge, prihodki, nakupi] = await Promise.all([
-    prisma.delovnaNaloga.findMany({ where: { status: "potrjena", ...dateWhere } }),
-    prisma.prihodekManual.findMany({ where: dateWhere }),
-    prisma.nakup.findMany({ where: dateWhere })
+    prisma.delovnaNaloga.aggregate({
+      where: { status: "potrjena", ...dateWhere },
+      _sum: { cena_dela_neto: true, cena_dela_bruto: true, cena_materiala: true }
+    }),
+    prisma.prihodekManual.aggregate({
+      where: dateWhere,
+      _sum: { neto_znesek: true, bruto_znesek: true }
+    }),
+    prisma.nakup.aggregate({
+      where: dateWhere,
+      _sum: { neto_znesek: true, bruto_znesek: true }
+    })
   ]);
-  const skupni_prihodi_neto = naloge.reduce((s, n) => s + Number(n.cena_dela_neto || 0) + Number(n.cena_materiala || 0), 0) + prihodki.reduce((s, p) => s + Number(p.neto_znesek || 0), 0);
-  const skupni_prihodi_bruto = naloge.reduce((s, n) => s + Number(n.cena_dela_bruto || 0) + Number(n.cena_materiala || 0), 0) + prihodki.reduce((s, p) => s + Number(p.bruto_znesek || 0), 0);
-  const skupni_stroski_neto = nakupi.reduce((s, n) => s + Number(n.neto_znesek || 0), 0);
-  const skupni_stroski_bruto = nakupi.reduce((s, n) => s + Number(n.bruto_znesek || 0), 0);
+  const skupni_prihodi_neto = Number(naloge._sum.cena_dela_neto || 0) + Number(naloge._sum.cena_materiala || 0) + Number(prihodki._sum.neto_znesek || 0);
+  const skupni_prihodi_bruto = Number(naloge._sum.cena_dela_bruto || 0) + Number(naloge._sum.cena_materiala || 0) + Number(prihodki._sum.bruto_znesek || 0);
+  const skupni_stroski_neto = Number(nakupi._sum.neto_znesek || 0);
+  const skupni_stroski_bruto = Number(nakupi._sum.bruto_znesek || 0);
   res.json({ skupni_prihodi_neto, skupni_prihodi_bruto, skupni_stroski_neto, skupni_stroski_bruto, razlika_neto: skupni_prihodi_neto - skupni_stroski_neto, razlika_bruto: skupni_prihodi_bruto - skupni_stroski_bruto });
 });
 
@@ -783,11 +808,11 @@ app.get("/api/analiza/prodaja", permit("admin"), async (req, res) => {
     ];
   }
   const [naloge, prihodki] = await Promise.all([
-    prisma.delovnaNaloga.findMany({ where: nalogeWhere, include: includeNaloga(), orderBy: { datum: "desc" } }),
+    prisma.delovnaNaloga.findMany({ where: nalogeWhere, select: nalogaListSelect(), orderBy: { datum: "desc" } }),
     prisma.prihodekManual.findMany({ where: dateWhere, orderBy: { datum: "desc" } })
   ]);
   res.json([
-    ...naloge.map((n) => ({ ...sanitizeNaloga(n), izvor_tip: "delovna_naloga", neto_znesek: Number(n.cena_dela_neto || 0) + Number(n.cena_materiala || 0), bruto_znesek: Number(n.cena_dela_bruto || 0) + Number(n.cena_materiala || 0) })),
+    ...naloge.map((n) => ({ ...n, izvor_tip: "delovna_naloga", neto_znesek: Number(n.cena_dela_neto || 0) + Number(n.cena_materiala || 0), bruto_znesek: Number(n.cena_dela_bruto || 0) + Number(n.cena_materiala || 0) })),
     ...prihodki.map((p) => ({ ...p, izvor_tip: "drugo" }))
   ].sort((a, b) => new Date(b.datum) - new Date(a.datum)));
 });
