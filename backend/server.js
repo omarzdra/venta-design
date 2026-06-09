@@ -261,11 +261,14 @@ app.get("/api/storitve", async (req, res) => {
 
 app.post("/api/storitve", permit("admin"), async (req, res) => {
   try {
-    requireFields(req.body, ["naziv", "eur_ura"]);
+    requireFields(req.body, ["naziv", "nabavna_cena", "prodajna_cena"]);
+    const prodajnaCena = moneyInput(req.body.prodajna_cena ?? req.body.eur_ura, 0);
     const storitev = await prisma.storitev.create({
       data: {
         naziv: String(req.body.naziv).trim(),
-        eur_ura: moneyInput(req.body.eur_ura, 0)
+        eur_ura: prodajnaCena,
+        nabavna_cena: moneyInput(req.body.nabavna_cena, 0),
+        prodajna_cena: prodajnaCena
       }
     });
     res.status(201).json(storitev);
@@ -276,11 +279,16 @@ app.post("/api/storitve", permit("admin"), async (req, res) => {
 
 app.put("/api/storitve/:id", permit("admin"), async (req, res) => {
   try {
+    const prodajnaCena = req.body.prodajna_cena !== undefined || req.body.eur_ura !== undefined
+      ? moneyInput(req.body.prodajna_cena ?? req.body.eur_ura, 0)
+      : undefined;
     const storitev = await prisma.storitev.update({
       where: { id: Number(req.params.id) },
       data: {
         naziv: req.body.naziv ? String(req.body.naziv).trim() : undefined,
-        eur_ura: req.body.eur_ura !== undefined ? moneyInput(req.body.eur_ura, 0) : undefined
+        eur_ura: prodajnaCena,
+        nabavna_cena: req.body.nabavna_cena !== undefined ? moneyInput(req.body.nabavna_cena, 0) : undefined,
+        prodajna_cena: prodajnaCena
       }
     });
     res.json(storitev);
@@ -551,7 +559,7 @@ async function syncNalogaMaterials(tx, nalogaId, nextMaterials, nextStoritve = [
         delovna_naloga_id: nalogaId,
         storitev_id: storitev.id,
         stevilo_ur: ure,
-        cena_skupaj: moneyInput(ure * Number(storitev.eur_ura), 0)
+        cena_skupaj: moneyInput(ure * Number(storitev.prodajna_cena || storitev.eur_ura), 0)
       }
     });
   }

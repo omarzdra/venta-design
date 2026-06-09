@@ -117,10 +117,12 @@ model DelovnaNaloga {
 }
 
 model Storitev {
-  id         Int      @id @default(autoincrement())
-  naziv      String
-  eur_ura    Decimal  @db.Decimal(12, 2)
-  created_at DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  naziv          String
+  eur_ura        Decimal  @db.Decimal(12, 2)
+  nabavna_cena   Decimal  @default(0) @db.Decimal(12, 2)
+  prodajna_cena  Decimal  @default(0) @db.Decimal(12, 2)
+  created_at     DateTime @default(now())
 
   nalogaStoritve DelovnaNalogaStoritev[]
 
