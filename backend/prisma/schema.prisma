@@ -144,11 +144,15 @@ model DelovnaNalogaStoritev {
 }
 
 model DelovnaNalogaDnevniStrosek {
-  id                Int     @id @default(autoincrement())
-  delovna_naloga_id Int     @unique
-  dnevni_strosek    Decimal @db.Decimal(12, 2)
-  stevilo_dni       Int
-  skupaj            Decimal @db.Decimal(12, 2)
+  id                       Int     @id @default(autoincrement())
+  delovna_naloga_id        Int     @unique
+  dnevni_strosek           Decimal @db.Decimal(12, 2)
+  stevilo_dni              Int
+  skupaj                   Decimal @db.Decimal(12, 2)
+  nabavni_dnevni_strosek   Decimal @default(0) @db.Decimal(12, 2)
+  prodajni_dnevni_strosek  Decimal @default(0) @db.Decimal(12, 2)
+  nabavni_skupaj           Decimal @default(0) @db.Decimal(12, 2)
+  prodajni_skupaj          Decimal @default(0) @db.Decimal(12, 2)
 
   naloga DelovnaNaloga @relation(fields: [delovna_naloga_id], references: [id], onDelete: Cascade)
 }

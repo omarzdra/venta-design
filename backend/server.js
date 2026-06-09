@@ -565,15 +565,21 @@ async function syncNalogaMaterials(tx, nalogaId, nextMaterials, nextStoritve = [
   }
 
   await tx.delovnaNalogaDnevniStrosek.deleteMany({ where: { delovna_naloga_id: nalogaId } });
-  if (nextDnevniStrosek && toNumber(nextDnevniStrosek.dnevni_strosek) > 0) {
-    const ds = toNumber(nextDnevniStrosek.dnevni_strosek, 0);
+  if (nextDnevniStrosek) {
+    const nabavniDs = toNumber(nextDnevniStrosek.nabavni_dnevni_strosek, 0);
+    const prodajniDs = toNumber(nextDnevniStrosek.prodajni_dnevni_strosek ?? nextDnevniStrosek.dnevni_strosek, 0);
+    if (nabavniDs <= 0 && prodajniDs <= 0) return;
     const dni = Math.max(1, parseInt(nextDnevniStrosek.stevilo_dni, 10) || 1);
     await tx.delovnaNalogaDnevniStrosek.create({
       data: {
         delovna_naloga_id: nalogaId,
-        dnevni_strosek: moneyInput(ds, 0),
+        dnevni_strosek: moneyInput(prodajniDs, 0),
         stevilo_dni: dni,
-        skupaj: moneyInput(ds * dni, 0)
+        skupaj: moneyInput(prodajniDs * dni, 0),
+        nabavni_dnevni_strosek: moneyInput(nabavniDs, 0),
+        prodajni_dnevni_strosek: moneyInput(prodajniDs, 0),
+        nabavni_skupaj: moneyInput(nabavniDs * dni, 0),
+        prodajni_skupaj: moneyInput(prodajniDs * dni, 0)
       }
     });
   }
