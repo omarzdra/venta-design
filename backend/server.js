@@ -308,7 +308,18 @@ app.get("/api/zaloga", async (req, res) => {
     const lots = p.lotProdukti.map((lot) => {
       const kolicina_m2 = calcM2(lot.kolicina_tm, p);
       const qty = kolicina_m2 ?? Number(lot.kolicina_tm);
-      return { ...lot, kolicina_m2, vrednost_zaloge: qty * Number(lot.nabavna_cena || 0) };
+      const nabavna_vrednost = qty * Number(lot.nabavna_cena || 0);
+      const prodajna_vrednost = qty * Number(lot.prodajna_cena || 0);
+      const marza = prodajna_vrednost - nabavna_vrednost;
+      return {
+        ...lot,
+        kolicina_m2,
+        vrednost_zaloge: nabavna_vrednost,
+        nabavna_vrednost,
+        prodajna_vrednost,
+        marza,
+        marza_pct: prodajna_vrednost > 0 ? (marza / prodajna_vrednost) * 100 : 0
+      };
     });
     return {
       ...p,
@@ -316,7 +327,10 @@ app.get("/api/zaloga", async (req, res) => {
       totals: {
         kolicina_tm: lots.reduce((s, l) => s + Number(l.kolicina_tm || 0), 0),
         kolicina_m2: lots.reduce((s, l) => s + Number(l.kolicina_m2 || 0), 0),
-        vrednost_zaloge: lots.reduce((s, l) => s + Number(l.vrednost_zaloge || 0), 0)
+        vrednost_zaloge: lots.reduce((s, l) => s + Number(l.nabavna_vrednost || 0), 0),
+        nabavna_vrednost: lots.reduce((s, l) => s + Number(l.nabavna_vrednost || 0), 0),
+        prodajna_vrednost: lots.reduce((s, l) => s + Number(l.prodajna_vrednost || 0), 0),
+        marza: lots.reduce((s, l) => s + Number(l.marza || 0), 0)
       }
     };
   }));
@@ -655,7 +669,7 @@ app.put("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
   }
 });
 
-app.patch("/api/naloge/:id/dokoncaj", permit("admin"), async (req, res) => {
+app.patch("/api/naloge/:id/dokoncaj", permit("admin", "grega"), async (req, res) => {
   try {
     const id = Number(req.params.id);
     const current = await prisma.delovnaNaloga.findUnique({ where: { id } });

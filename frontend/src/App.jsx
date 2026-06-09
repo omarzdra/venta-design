@@ -316,14 +316,64 @@ function ZalogaView({ data, role, reload, notify }) {
   const [showInventura, setShowInventura] = useState(false);
   const canEdit = ["admin", "racunovodkinja"].includes(role);
   const filtered = data.filter((p) => `${p.koda} ${p.naziv_produkta} ${p.dobavitelj || ""}`.toLowerCase().includes(search.toLowerCase()));
-  const totals = filtered.reduce((a, p) => ({ value: a.value + Number(p.totals?.vrednost_zaloge || 0) }), { value: 0 });
+  const totals = filtered.reduce((a, p) => ({
+    nabavna: a.nabavna + Number(p.totals?.nabavna_vrednost || p.totals?.vrednost_zaloge || 0),
+    prodajna: a.prodajna + Number(p.totals?.prodajna_vrednost || 0),
+    marza: a.marza + Number(p.totals?.marza || 0)
+  }), { nabavna: 0, prodajna: 0, marza: 0 });
   async function saveLot(id) { await api.updateLot(id, { lot_stevilka: edit[id] }); notify("LOT stevilka je shranjena."); reload(); }
-  return <div className="stack"><section className="kpi-row"><div className="kpi"><span>Vrednost zaloge</span><strong>{money(totals.value)}</strong></div></section><section className="panel"><div className="section-head"><h2>Materiali</h2><div className="form-actions"><button className="btn secondary" onClick={() => setShowInventura(true)}>+ Inventura</button>{role === "admin" && <button className="btn primary" onClick={() => setShowProduct(true)}>+ Dodaj material</button>}</div></div><input placeholder="Isci po kodi, nazivu, dobavitelju..." value={search} onChange={(e) => setSearch(e.target.value)} /><div className="dense-list" style={{ marginTop: 12 }}>{filtered.map((p) => <article className="inventory-item" key={p.id}><button className="item-main" onClick={() => setExpanded(expanded === p.id ? null : p.id)}><div><strong>{p.koda} - {p.naziv_produkta}</strong><span className="muted">{p.dobavitelj || "Brez dobavitelja"}</span><span>{p.tip.toUpperCase()} {p.sirina ? `- sirina ${p.sirina}` : ""}</span></div><div className="numbers"><b>{Number(p.totals?.kolicina_tm || 0).toFixed(2)} {p.tip === "adr" ? "kos" : p.tip === "tabla" ? "m2" : "tm"}</b><b>{p.tip === "folija" ? `${Number(p.totals?.kolicina_m2 || 0).toFixed(2)} m2` : ""}</b><b>{money(p.totals?.vrednost_zaloge)}</b></div></button>{expanded === p.id && <div className="lot-list">{(p.lotProdukti || []).length === 0 ? <p className="muted">Ni aktivnih LOTov.</p> : p.lotProdukti.map((lot) => <div className="lot-row" key={lot.id}>{p.tip !== "adr" && <>{edit[lot.id] !== undefined ? <input value={edit[lot.id]} onChange={(e) => setEdit({ ...edit, [lot.id]: e.target.value })} /> : <strong>LOT {lot.lot_stevilka || "/"}</strong>}</>}<span>Kol: {Number(lot.kolicina_tm).toFixed(2)} {p.tip === "adr" ? "kos" : p.tip === "tabla" ? "m2" : "tm"}</span>{p.tip === "folija" && <span>{lot.kolicina_m2 ? `${Number(lot.kolicina_m2).toFixed(2)} m2` : "/"}</span>}<span>Nab: {money(lot.nabavna_cena)}/m2</span><span>Prod: {money(lot.prodajna_cena)}/m2</span>{canEdit && p.tip !== "adr" && (edit[lot.id] !== undefined ? <button className="btn secondary" onClick={() => saveLot(lot.id)}>Shrani</button> : <button className="icon-btn" onClick={() => setEdit({ ...edit, [lot.id]: lot.lot_stevilka || "" })}>u</button>)}</div>)}</div>}</article>)}</div></section>{showProduct && <ProductFormModal onClose={() => setShowProduct(false)} onSaved={async () => { notify("Material je dodan."); await reload(); }} />}{showInventura && <InventuraModal onClose={() => setShowInventura(false)} notify={notify} />}</div>;
+  return <div className="stack">
+    <section className="kpi-row">
+      <div className="kpi"><span>Nabavna vrednost</span><strong>{money(totals.nabavna)}</strong></div>
+      <div className="kpi"><span>Prodajna vrednost</span><strong>{money(totals.prodajna)}</strong></div>
+      <div className={cx("kpi", totals.marza >= 0 ? "positive" : "negative")}><span>Marza</span><strong>{money(totals.marza)}</strong></div>
+    </section>
+    <section className="panel">
+      <div className="section-head"><h2>Materiali</h2><div className="form-actions"><button className="btn secondary" onClick={() => setShowInventura(true)}>+ Inventura</button>{role === "admin" && <button className="btn primary" onClick={() => setShowProduct(true)}>+ Dodaj material</button>}</div></div>
+      <input placeholder="Isci po kodi, nazivu, dobavitelju..." value={search} onChange={(e) => setSearch(e.target.value)} />
+      <div className="dense-list" style={{ marginTop: 12 }}>{filtered.map((p) => {
+        const nabavna = Number(p.totals?.nabavna_vrednost || p.totals?.vrednost_zaloge || 0);
+        const prodajna = Number(p.totals?.prodajna_vrednost || 0);
+        const marza = Number(p.totals?.marza || 0);
+        const marzaPct = prodajna > 0 ? (marza / prodajna) * 100 : 0;
+        const unit = p.tip === "adr" ? "kos" : p.tip === "tabla" ? "m2" : "tm";
+        return <article className="inventory-item" key={p.id}>
+          <button className="item-main" onClick={() => setExpanded(expanded === p.id ? null : p.id)}>
+            <div><strong>{p.koda} - {p.naziv_produkta}</strong><span className="muted">{p.dobavitelj || "Brez dobavitelja"}</span><span>{p.tip.toUpperCase()} {p.sirina ? `- sirina ${p.sirina}` : ""}</span></div>
+            <div className="numbers inventory-summary">
+              <b>{Number(p.totals?.kolicina_tm || 0).toFixed(2)} {unit}</b>
+              <b>Nab {money(nabavna)}</b>
+              <b>Prod {money(prodajna)}</b>
+              <b>Marza {money(marza)} ({marzaPct.toFixed(1)}%)</b>
+            </div>
+          </button>
+          {expanded === p.id && <div className="lot-list">{(p.lotProdukti || []).length === 0 ? <p className="muted">Ni aktivnih LOTov.</p> : p.lotProdukti.map((lot) => {
+            const lotQtyUnit = p.tip === "adr" ? "kos" : p.tip === "tabla" ? "m2" : "tm";
+            return <div className="lot-row inventory-lot-row" key={lot.id}>
+              <div className="lot-identity">
+                <span>LOT</span>
+                {p.tip !== "adr" && edit[lot.id] !== undefined ? <input value={edit[lot.id]} onChange={(e) => setEdit({ ...edit, [lot.id]: e.target.value })} /> : <strong>{p.tip === "adr" ? "/" : lot.lot_stevilka || "/"}</strong>}
+              </div>
+              <div><span>Kolicina</span><strong>{Number(lot.kolicina_tm).toFixed(2)} {lotQtyUnit}</strong>{p.tip === "folija" && <small>{lot.kolicina_m2 ? `${Number(lot.kolicina_m2).toFixed(2)} m2` : "/"}</small>}</div>
+              <div><span>Nabavna cena</span><strong>{money(lot.nabavna_cena)}</strong><small>{p.tip === "adr" ? "/kos" : "/m2"}</small></div>
+              <div><span>Prodajna cena</span><strong>{money(lot.prodajna_cena)}</strong><small>{p.tip === "adr" ? "/kos" : "/m2"}</small></div>
+              <div><span>Marza</span><strong>{money(lot.marza)}</strong><small>{Number(lot.marza_pct || 0).toFixed(1)}%</small></div>
+              {canEdit && p.tip !== "adr" && (edit[lot.id] !== undefined ? <button className="btn secondary" onClick={() => saveLot(lot.id)}>Shrani</button> : <button className="icon-btn" title="Uredi LOT" onClick={() => setEdit({ ...edit, [lot.id]: lot.lot_stevilka || "" })}>u</button>)}
+            </div>;
+          })}</div>}
+        </article>;
+      })}</div>
+    </section>
+    {showProduct && <ProductFormModal onClose={() => setShowProduct(false)} onSaved={async () => { notify("Material je dodan."); await reload(); }} />}
+    {showInventura && <InventuraModal onClose={() => setShowInventura(false)} notify={notify} />}
+  </div>;
 }
 
 function DetailModal({ naloga, role, onClose, onEdit, reload, notify }) {
   const [viewerImage, setViewerImage] = useState(null);
   const canConfirm = role === "admin" && naloga.stevilka_racuna && naloga.materiali?.length >= 1 && Number(naloga.cena_dela_neto || 0) > 0;
+  const canComplete = ["admin", "grega"].includes(role) && naloga.status !== "potrjena";
+  const canEditNaloga = ["admin", "grega"].includes(role);
   async function done() { await api.dokoncajNaloga(naloga.id); notify("Naloga je oznacena kot dokoncana."); if (reload) await reload(); onClose(); }
   async function confirm() { await api.potrdiNaloga(naloga.id, {}); notify("Naloga je potrjena."); if (reload) await reload(); onClose(); }
   async function removeImage(slikaId) { await api.deleteNalogaSlika(naloga.id, slikaId); notify("Slika je odstranjena."); if (reload) await reload(); onClose(); }
@@ -346,7 +396,7 @@ function DetailModal({ naloga, role, onClose, onEdit, reload, notify }) {
       {naloga.storitve?.length > 0 && <><h3>Storitve</h3><table className="mobile-cards"><thead><tr><th>Storitev</th><th>Ure</th><th>Skupaj</th></tr></thead><tbody>{naloga.storitve.map((s) => <tr key={s.id}><td data-label="Storitev">{s.storitev.naziv}</td><td data-label="Ure">{s.stevilo_ur}h</td><td data-label="Skupaj">{money(s.cena_skupaj)}</td></tr>)}</tbody></table></>}
       {naloga.dnevniStrosek && <div className="total-line">Dnevni strosek: {money(naloga.dnevniStrosek.dnevni_strosek)}/dan x {naloga.dnevniStrosek.stevilo_dni} dni = <strong>{money(naloga.dnevniStrosek.skupaj)}</strong></div>}
       {naloga.slike?.length > 0 && <><h3>Slike</h3><div className="thumbs">{naloga.slike.map((s) => <div className="thumb" key={s.id}><button type="button" className="thumb-preview" title="Odpri sliko" onClick={() => setViewerImage(s)}><img src={s.url} alt="Naloga" /></button><button type="button" title="Odstrani sliko" onClick={() => removeImage(s.id)}>x</button></div>)}</div></>}
-      <div className="form-actions"><button className="btn secondary" onClick={onEdit}>Uredi</button>{role === "admin" && naloga.status !== "potrjena" && <><button className="btn secondary" onClick={done}>Oznaci kot dokoncano</button><button className="btn primary" disabled={!canConfirm} onClick={confirm}>Potrdi nalog</button></>}</div>
+      <div className="form-actions">{canEditNaloga && <button className="btn secondary" onClick={onEdit}>Uredi</button>}{canComplete && <button className="btn secondary" onClick={done}>Oznaci kot dokoncano</button>}{role === "admin" && naloga.status !== "potrjena" && <button className="btn primary" disabled={!canConfirm} onClick={confirm}>Potrdi nalog</button>}</div>
       <PictureViewer image={viewerImage} onClose={() => setViewerImage(null)} notify={notify} />
     </Modal>
   );

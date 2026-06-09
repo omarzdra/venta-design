@@ -77,8 +77,39 @@ small, .muted { color: var(--color-text-muted); }
 .item-main:hover, .work-item:hover { background: var(--color-surface-3); }
 .item-main span, .work-item span { display: block; color: var(--color-text-muted); margin-top: 3px; }
 .numbers { display: grid; grid-template-columns: repeat(3, minmax(90px, auto)); gap: 12px; text-align: right; font-family: "JetBrains Mono", monospace; }
+.inventory-summary { grid-template-columns: repeat(4, minmax(110px, auto)); align-items: center; }
 .lot-list { border-top: 1px solid var(--color-border); padding: 8px; display: grid; gap: 6px; }
 .lot-row { display: grid; grid-template-columns: 48px 1fr 120px 120px auto; gap: 8px; align-items: center; padding: 8px; background: var(--color-surface); border-radius: 4px; }
+.inventory-lot-row {
+  grid-template-columns: minmax(120px, 1.1fr) repeat(4, minmax(120px, 1fr)) auto;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px;
+}
+.inventory-lot-row > div {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  border-radius: 4px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 4px;
+}
+.inventory-lot-row span {
+  color: var(--color-text-muted);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.inventory-lot-row strong {
+  font-family: "JetBrains Mono", monospace;
+}
+.inventory-lot-row small {
+  color: var(--color-text-muted);
+}
+.lot-identity input {
+  min-height: 36px;
+  padding: 6px 8px;
+}
 
 .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .wide { grid-column: 1 / -1; }
