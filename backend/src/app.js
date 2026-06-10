@@ -736,8 +736,8 @@ app.post("/api/naloge", permit("admin", "grega"), async (req, res) => {
       const naloga = await tx.delovnaNaloga.create({ data: nalogaPayload(req.body, true, null, req.user.role) });
       await tx.delovnaNaloga.update({ where: { id: naloga.id }, data: { stevilka_delovnega_naloga: formatNalogaNumber(req.body.tip, naloga.id, naloga.datum) } });
       if (req.body.tip === "vozila") {
-        requireFields(req.body.vozilo || {}, ["stevilka_sasije", "znamka_vozila"]);
-        await tx.vozilo.create({ data: { delovna_naloga_id: naloga.id, registrska_stevilka: req.body.vozilo.registrska_stevilka || null, stevilka_sasije: req.body.vozilo.stevilka_sasije, znamka_vozila: req.body.vozilo.znamka_vozila } });
+        requireFields(req.body.vozilo || {}, ["znamka_vozila"]);
+        await tx.vozilo.create({ data: { delovna_naloga_id: naloga.id, registrska_stevilka: req.body.vozilo.registrska_stevilka || null, stevilka_sasije: req.body.vozilo.stevilka_sasije || "/", znamka_vozila: req.body.vozilo.znamka_vozila } });
         for (const opis of req.body.poskodbe || []) await tx.delovnaNalogaPoskodba.create({ data: { delovna_naloga_id: naloga.id, opis } });
       }
       for (const url of req.body.slike || []) await tx.delovnaNalogaSlika.create({ data: { delovna_naloga_id: naloga.id, url: String(url) } });
@@ -761,7 +761,8 @@ app.put("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
     await prisma.$transaction(async (tx) => {
       await tx.delovnaNaloga.update({ where: { id }, data: nalogaPayload(req.body, false, current, req.user.role) });
       if (current.tip === "vozila" && req.body.vozilo) {
-        await tx.vozilo.upsert({ where: { delovna_naloga_id: id }, update: { registrska_stevilka: req.body.vozilo.registrska_stevilka || null, stevilka_sasije: req.body.vozilo.stevilka_sasije || "", znamka_vozila: req.body.vozilo.znamka_vozila || "" }, create: { delovna_naloga_id: id, registrska_stevilka: req.body.vozilo.registrska_stevilka || null, stevilka_sasije: req.body.vozilo.stevilka_sasije || "", znamka_vozila: req.body.vozilo.znamka_vozila || "" } });
+        requireFields(req.body.vozilo || {}, ["znamka_vozila"]);
+        await tx.vozilo.upsert({ where: { delovna_naloga_id: id }, update: { registrska_stevilka: req.body.vozilo.registrska_stevilka || null, stevilka_sasije: req.body.vozilo.stevilka_sasije || "/", znamka_vozila: req.body.vozilo.znamka_vozila }, create: { delovna_naloga_id: id, registrska_stevilka: req.body.vozilo.registrska_stevilka || null, stevilka_sasije: req.body.vozilo.stevilka_sasije || "/", znamka_vozila: req.body.vozilo.znamka_vozila } });
         await tx.delovnaNalogaPoskodba.deleteMany({ where: { delovna_naloga_id: id } });
         for (const opis of req.body.poskodbe || []) await tx.delovnaNalogaPoskodba.create({ data: { delovna_naloga_id: id, opis } });
       }
