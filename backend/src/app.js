@@ -657,7 +657,7 @@ async function syncNalogaMaterials(tx, nalogaId, nextMaterials, nextStoritve = [
 }
 
 function nalogaPayload(body, isCreate = false, current = null, role = "admin") {
-  if (isCreate) requireFields(body, ["tip", "naziv_projekta", "kontakt_ime"]);
+  if (isCreate) requireFields(body, ["tip", "naziv_projekta"]);
   if (body.tip && !["splosno", "vozila", "vb_tisk"].includes(body.tip)) throw new Error("Tip naloge mora biti splosno, vozila ali VB tisk.");
   const status = body.status || current?.status || "v_izdelavi";
   if (!STATUSES.includes(status)) throw new Error("Neveljaven status naloge.");
@@ -667,7 +667,7 @@ function nalogaPayload(body, isCreate = false, current = null, role = "admin") {
     naziv_projekta: body.naziv_projekta,
     opis: body.opis || null,
     opomba: body.opomba || null,
-    kontakt_ime: body.kontakt_ime,
+    kontakt_ime: String(body.kontakt_ime || "").trim() || "/",
     kontakt_gsm: body.kontakt_gsm || null,
     kontakt_email: body.kontakt_email || null
   };
