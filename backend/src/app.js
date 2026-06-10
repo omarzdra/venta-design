@@ -592,7 +592,7 @@ app.post("/api/nakupi", permit("admin"), async (req, res) => {
         });
       }
       return tx.nakup.findUnique({ where: { id: nakup.id }, include: { postavke: { include: { produkt: true, lotProdukt: true } } } });
-    });
+    }, { timeout: 30000 });
 
     res.status(201).json(created);
   } catch (error) {
@@ -749,7 +749,7 @@ app.post("/api/naloge", permit("admin", "grega"), async (req, res) => {
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
-});
+},{ timeout: 30000 });
 
 app.put("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
   try {
@@ -776,7 +776,7 @@ app.put("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
-});
+}, { timeout: 30000 });
 
 app.patch("/api/naloge/:id/dokoncaj", permit("admin", "grega"), async (req, res) => {
   try {
