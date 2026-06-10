@@ -1,50 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api } from "./api";
-import { supabase } from "./supabaseClient";
+import { api } from "./lib/api";
+import { supabase } from "./lib/supabaseClient";
+import { CATS, CAT_LABEL } from "./constants/categories";
+import { DAMAGE } from "./constants/damage";
+import { TABS } from "./constants/tabs";
+import { calcDnevniTotal, calcMaterialCost, calcMaterialTotal, calcStoritveCost, calcStoritveTotal, materialQtyM2 } from "./utils/calculations";
+import { Badge } from "./components/ui/Badge";
+import { LoadingPopup } from "./components/ui/LoadingPopup";
+import { Modal } from "./components/ui/Modal";
+import { Toast } from "./components/ui/Toast";
 import { clearForm, loadForm, saveForm } from "./utils/formStorage";
+import { cx, d, money } from "./utils/formatters";
 import logoSvg from "./assets/logo.png";
-import "./styles.css";
 
-const STATUS = { v_izdelavi: "V izdelavi", dokoncana: "Dokoncana", potrjena: "Potrjena" };
-const TABS = [
-  { id: "zaloga", label: "Zaloga Materiala", mobileLabel: "Zaloga", roles: ["admin", "racunovodkinja", "grega"] },
-  { id: "naloge", label: "Ustvari Delovni Nalog", mobileLabel: "DN", roles: ["admin", "grega"] },
-  { id: "evidenca", label: "Evidenca Delovnih Nalogov", mobileLabel: "Evidenca", roles: ["admin", "grega"] },
-  { id: "storitve", label: "Storitve", mobileLabel: "Storitve", roles: ["admin"] },
-  { id: "ponudba", label: "Ustvari Ponudbo", mobileLabel: "Ponudba", roles: ["admin"] },
-  { id: "analiza", label: "Analiza", mobileLabel: "Analiza", roles: ["admin"] }
-];
-const CATS = ["material", "oprema", "lizing", "gorivo", "bancni_stroski", "place", "smeti", "telefon", "najemnina", "posta", "mehanik", "oglasevanje", "pripomocki", "zavarovanje", "drugo"];
-const CAT_LABEL = { material: "Material", oprema: "Oprema", lizing: "Lizing", gorivo: "Gorivo", bancni_stroski: "Bancni stroski", place: "Place", smeti: "Smeti", telefon: "Telefon", najemnina: "Najemnina", posta: "Posta", mehanik: "Mehanik", oglasevanje: "Oglasevanje", pripomocki: "Pripomocki", zavarovanje: "Zavarovanje", drugo: "Drugo" };
-const DAMAGE = ["Sprednji levi zaromet/meglenka/smerokaz", "Sprednji levi blatnik", "Sprednje levo platisce/pnevmatika", "Sprednje levo ogledalo", "Leva vrata/kabina/streha", "Stranski levi spojler", "Medosni levi spojler", "Zadnji levi blatnik", "Zadnje levo platisce", "Zadnji levi zaromet/meglenka/smerokaz", "Sprednji odbijac", "Pokrov motorja", "Vetrobransko steklo", "Streha", "Zadnji del kabine", "Sprednji desni zaromet/meglenka/smerokaz", "Sprednji desni blatnik", "Sprednje desno platisce/pnevmatika", "Sprednje desno ogledalo", "Desna vrata/kabina/streha", "Stranski desni spojler", "Medosni desni spojler", "Zadnji desni blatnik", "Zadnje desno platisce", "Zadnji desni zaromet/meglenka/smerokaz"];
-
-const money = (v) => new Intl.NumberFormat("sl-SI", { style: "currency", currency: "EUR" }).format(Number(v || 0));
-const d = (v) => v ? new Intl.DateTimeFormat("sl-SI").format(new Date(v)) : "/";
-const cx = (...x) => x.filter(Boolean).join(" ");
 const emptyTask = (tip = "splosno") => ({ tip, naziv_projekta: "", status: "v_izdelavi", stevilka_racuna: "", opis: "", opomba: "", kontakt_ime: "", kontakt_gsm: "", kontakt_email: "", cena_dela_neto: "", ddv_stopnja: 22, vozilo: { registrska_stevilka: "", stevilka_sasije: "", znamka_vozila: "" }, poskodbe: [], materiali: [], storitve: [], dnevniStrosek: { dnevni_strosek: "", stevilo_dni: "" }, slike: [] });
-const materialQtyM2 = (qty, produkt) => produkt?.tip === "tabla" ? Number(qty || 0) : produkt?.sirina ? Number(qty || 0) * Number(produkt.sirina) : Number(qty || 0);
-const calcMaterialTotal = (rows, lots) => (rows || []).reduce((sum, row) => {
-  const lot = lots.find((l) => Number(l.id) === Number(row.lot_produkt_id));
-  if (!lot) return sum;
-  return sum + materialQtyM2(row.kolicina_tm, lot.produkt) * Number(lot.prodajna_cena || 0);
-}, 0);
-const calcMaterialCost = (rows, lots) => (rows || []).reduce((sum, row) => {
-  const lot = lots.find((l) => Number(l.id) === Number(row.lot_produkt_id));
-  if (!lot) return sum;
-  return sum + materialQtyM2(row.kolicina_tm, lot.produkt) * Number(lot.nabavna_cena || 0);
-}, 0);
-const calcStoritveTotal = (rows, storitve) => (rows || []).reduce((sum, row) => {
-  const storitev = storitve.find((s) => Number(s.id) === Number(row.storitev_id));
-  return sum + Number(row.stevilo_ur || 0) * Number(storitev?.prodajna_cena ?? storitev?.eur_ura ?? 0);
-}, 0);
-const calcStoritveCost = (rows, storitve) => (rows || []).reduce((sum, row) => {
-  const storitev = storitve.find((s) => Number(s.id) === Number(row.storitev_id));
-  return sum + Number(row.stevilo_ur || 0) * Number(storitev?.nabavna_cena || 0);
-}, 0);
-const calcDnevniTotal = (row) => Number(row?.dnevni_strosek || 0) * Number(row?.stevilo_dni || 0);
 
-function Toast({ toast }) { return toast ? <div className={cx("toast", toast.type)}>{toast.message}</div> : null; }
-function Badge({ value }) { return <span className={cx("badge", value)}>{STATUS[value] || value}</span>; }
 function PencilIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -53,9 +23,6 @@ function PencilIcon() {
     </svg>
   );
 }
-function Modal({ title, children, onClose, fullscreen = false }) { return <div className="modal-backdrop" onMouseDown={onClose}><section className={cx("modal", fullscreen && "fullscreen")} onMouseDown={(e) => e.stopPropagation()}><div className="modal-title"><h2>{title}</h2><button className="icon-btn" onClick={onClose}>x</button></div>{children}</section></div>; }
-function LoadingPopup() { return <div className="loading-popover">Nalaganje...</div>; }
-
 function imageFileName(image) {
   const fallback = `naloga-slika-${image?.id || Date.now()}.jpg`;
   const rawName = image?.url?.split("/").pop()?.split("?")[0];
@@ -347,7 +314,7 @@ function InventuraModal({ onClose, notify }) {
   }
   const done = selected?.loti?.filter((l) => l.oznacen).length || 0;
   const total = selected?.loti?.length || 0;
-  return <Modal title="Inventure" onClose={onClose}><div className="grid-layout"><section><div className="form-actions" style={{ justifyContent: "space-between" }}><button className="btn secondary" onClick={onClose}>Nazaj</button><label>Datum<input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} /></label><button className="btn primary" onClick={create}>+ Nova inventura</button></div><div className="dense-list">{inventure.map((inv) => <button key={inv.id} className="work-item" onClick={() => openInventura(inv.id)}><div><strong>{d(inv.datum)}</strong><span>{inv.loti_count || inv.loti?.length || 0} LOT zapisov</span></div><span className={cx("badge", inv.zakljucena && "potrjena")}>{inv.zakljucena ? "Zakljucena" : "V teku"}</span></button>)}</div></section><aside>{detailLoading ? <div className="panel empty-side">Nalaganje inventure...</div> : selected ? <section className="panel"><div className="section-head"><h2>{d(selected.datum)}</h2><Badge value={selected.zakljucena ? "potrjena" : "dokoncana"} /></div><p className="muted">{done} / {total} oznacenih</p>{done === total && total > 0 && <div className="alert-inline">Inventura zakljucena!</div>}<div className="dense-list">{selected.loti.map((l) => { const p = l.lotProdukt.produkt; return <label className="check" key={l.id}><input type="checkbox" checked={l.oznacen} onChange={() => toggle(l.lot_produkt_id)} />{p.tip === "adr" ? "" : `LOT ${l.lotProdukt.lot_stevilka || "/"} - `}{p.koda} - {p.naziv_produkta} - {Number(l.lotProdukt.kolicina_tm).toFixed(2)} {p.tip === "adr" ? "kos" : p.tip === "tabla" ? "m2" : "tm"}</label>; })}</div></section> : <div className="panel empty-side">Izberi inventuro.</div>}</aside></div></Modal>;
+  return <Modal title="Inventure" onClose={onClose}><div className="grid-layout"><section><div className="form-actions" style={{ justifyContent: "space-between" }}><button className="btn secondary" onClick={onClose}>Nazaj</button><label>Datum<input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} /></label><button className="btn primary" onClick={create}>+ Nova inventura</button></div><div className="dense-list">{inventure.map((inv) => <button key={inv.id} className="work-item" onClick={() => openInventura(inv.id)}><div><strong>{d(inv.datum)}</strong><span>{inv.loti_count || inv.loti?.length || 0} LOT zapisov</span></div><span className={cx("badge", inv.zakljucena && "potrjena")}>{inv.zakljucena ? "Zakljucena" : "V teku"}</span></button>)}</div></section><aside>{detailLoading ? <div className="panel empty-side">Nalaganje inventure...</div> : selected ? <section className="panel"><div className="section-head"><h2>{d(selected.datum)}</h2></div><p className="muted">{done} / {total} oznacenih</p>{done === total && total > 0 && <div className="alert-inline">Inventura zakljucena!</div>}<div className="dense-list">{selected.loti.map((l) => { const p = l.lotProdukt.produkt; return <label className="check" key={l.id}><input type="checkbox" checked={l.oznacen} onChange={() => toggle(l.lot_produkt_id)} />{p.tip === "adr" ? "" : `LOT ${l.lotProdukt.lot_stevilka || "/"} - `}{p.koda} - {p.naziv_produkta} - {Number(l.lotProdukt.kolicina_tm).toFixed(2)} {p.tip === "adr" ? "kos" : p.tip === "tabla" ? "m2" : "tm"}</label>; })}</div></section> : <div className="panel empty-side">Izberi inventuro.</div>}</aside></div></Modal>;
 }
 
 function ZalogaView({ data, role, reload, notify }) {
@@ -374,8 +341,6 @@ function ZalogaView({ data, role, reload, notify }) {
       <input placeholder="Isci po kodi, nazivu, dobavitelju..." value={search} onChange={(e) => setSearch(e.target.value)} />
       <div className="dense-list" style={{ marginTop: 12 }}>{filtered.map((p) => {
         const nabavna = Number(p.totals?.nabavna_vrednost || p.totals?.vrednost_zaloge || 0);
-        const prodajna = Number(p.totals?.prodajna_vrednost || 0);
-        const marza = Number(p.totals?.marza || 0);
         const unit = p.tip === "adr" ? "kos" : p.tip === "tabla" ? "m2" : "tm";
         return <article className="inventory-item" key={p.id}>
           <button className="item-main" onClick={() => setExpanded(expanded === p.id ? null : p.id)}>

@@ -1,17 +1,86 @@
-# React + Vite
+# Venta Design
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Internal business app for Venta Design inventory, work orders, services, offers and analytics.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Frontend: React, Vite, Supabase Auth
+- Backend: Express, Prisma, PostgreSQL
+- Storage: Supabase Storage
+- Deployment: Vercel or similar for frontend, Railway for backend
 
-## React Compiler
+## Local Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Install dependencies:
 
-## Expanding the ESLint configuration
+```bash
+cd frontend
+npm install
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-"# venta-design" 
+cd ../backend
+npm install
+```
+
+Create environment files from examples:
+
+```bash
+cp frontend/.env.example frontend/.env
+cp backend/.env.example backend/.env
+```
+
+Run Prisma migrations locally:
+
+```bash
+cd backend
+npx prisma migrate dev
+```
+
+Start backend:
+
+```bash
+cd backend
+npm run dev
+```
+
+Start frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+## Checks
+
+Frontend:
+
+```bash
+cd frontend
+npm run build
+```
+
+Backend:
+
+```bash
+cd backend
+npm run check
+```
+
+## Environment Variables
+
+Frontend variables are documented in `frontend/.env.example`.
+
+Backend variables are documented in `backend/.env.example`.
+
+Do not commit real `.env` files or service role keys.
+
+## Deployment Notes
+
+- Set `VITE_API_URL` on the frontend to the deployed backend URL.
+- Set `CORS_ORIGINS` on the backend to the deployed frontend origin.
+- Run `npx prisma migrate deploy` on production after migrations are added.
+- Keep `SUPABASE_SERVICE_ROLE_KEY` only on the backend.
+- Configure the `naloga-slike` Supabase Storage bucket before image upload is used.
+
+## Architecture
+
+See `docs/architecture.md` and `REFACTOR_NOTES.md`.
