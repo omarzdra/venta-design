@@ -173,8 +173,8 @@ function nalogaListSelect() {
 }
 
 function formatNalogaNumber(tip, id, date = new Date()) {
-  const prefixes = { splosno: "s", vozila: "v", vb_tisk: "vb" };
-  return `${prefixes[tip] || "s"}-${id}-${new Date(date).getFullYear()}`;
+  const prefixes = { splosno: "S", vozila: "V", vb_tisk: "VB" };
+  return `${prefixes[tip] || "S"}-${id}-${new Date(date).getFullYear()}`;
 }
 
 function sanitizeNaloga(naloga, role = "admin") {
@@ -354,7 +354,7 @@ app.get("/api/zaloga", async (req, res) => {
       const qty = kolicina_m2 ?? Number(lot.kolicina_tm);
       const nabavna_vrednost = qty * Number(lot.nabavna_cena || 0);
       const prodajna_vrednost = qty * Number(lot.prodajna_cena || 0);
-      const marza = prodajna_vrednost - nabavna_vrednost;
+      const marza = Number(lot.prodajna_cena || 0) - Number(lot.nabavna_cena || 0);
       return {
         ...lot,
         kolicina_m2,
@@ -362,7 +362,7 @@ app.get("/api/zaloga", async (req, res) => {
         nabavna_vrednost,
         prodajna_vrednost,
         marza,
-        marza_pct: prodajna_vrednost > 0 ? (marza / prodajna_vrednost) * 100 : 0
+        marza_pct: Number(lot.prodajna_cena || 0) > 0 ? (marza / Number(lot.prodajna_cena || 0)) * 100 : 0
       };
     });
     const item = {

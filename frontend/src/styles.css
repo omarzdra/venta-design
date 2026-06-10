@@ -199,7 +199,9 @@ tr:hover td { background: var(--color-surface-2); }
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.82); padding: 24px; display: grid; place-items: center; }
 .modal { width: min(1120px, 100%); max-height: calc(100vh - 48px); overflow: auto; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; padding: 16px; }
+.modal.fullscreen { width: min(1440px, calc(100vw - 48px)); height: calc(100vh - 48px); }
 .modal-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--color-border); }
+.inline-action { margin-top: 8px; width: 100%; }
 .toast { position: fixed; right: 18px; bottom: 18px; z-index: 80; background: #050505; color: var(--color-text); border: 1px solid var(--color-border); border-left: 4px solid var(--color-success); border-radius: 4px; padding: 12px 14px; max-width: min(420px, calc(100vw - 32px)); }
 .toast.error { border-left-color: var(--color-error); }
 
@@ -317,6 +319,7 @@ tr:hover td { background: var(--color-surface-2); }
 @media (max-width: 600px) {
   .modal-backdrop { align-items: end; padding: 0; }
   .modal { width: 100%; max-height: 92vh; border-radius: 12px 12px 0 0; }
+  .modal.fullscreen { width: 100%; height: 92vh; }
   table.mobile-cards, table.mobile-cards thead, table.mobile-cards tbody, table.mobile-cards tr, table.mobile-cards td { display: block; }
   table.mobile-cards thead { display: none; }
   table.mobile-cards tr { border: 1px solid var(--color-border); border-radius: 4px; margin-bottom: 8px; background: var(--color-surface-2); }
