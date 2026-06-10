@@ -743,13 +743,13 @@ app.post("/api/naloge", permit("admin", "grega"), async (req, res) => {
       for (const url of req.body.slike || []) await tx.delovnaNalogaSlika.create({ data: { delovna_naloga_id: naloga.id, url: String(url) } });
       await syncNalogaMaterials(tx, naloga.id, req.body.materiali || [], req.user.role === "admin" ? (req.body.storitve || []) : [], req.user.role === "admin" ? (req.body.dnevniStrosek || null) : null);
       return naloga.id;
-    });
+    }, { timeout: 30000 });
     const created = await prisma.delovnaNaloga.findUnique({ where: { id: createdId }, include: includeNaloga() });
     res.status(201).json(sanitizeNaloga(created, req.user.role));
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
-},{ timeout: 30000 });
+});
 
 app.put("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
   try {
@@ -769,14 +769,14 @@ app.put("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
       await tx.delovnaNalogaSlika.deleteMany({ where: { delovna_naloga_id: id } });
       for (const url of nextSlike) await tx.delovnaNalogaSlika.create({ data: { delovna_naloga_id: id, url } });
       await syncNalogaMaterials(tx, id, req.body.materiali || [], req.user.role === "admin" ? (req.body.storitve || []) : (current.storitve || []).map((s) => ({ storitev_id: s.storitev_id, stevilo_ur: s.stevilo_ur })), req.user.role === "admin" ? (req.body.dnevniStrosek || null) : current.dnevniStrosek);
-    });
+    }, { timeout: 30000 });
     if (removedSlike.length) await deleteNalogaStorageUrls(removedSlike.map((slika) => slika.url));
     const updated = await prisma.delovnaNaloga.findUnique({ where: { id }, include: includeNaloga() });
     res.json(sanitizeNaloga(updated, req.user.role));
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
-}, { timeout: 30000 });
+});
 
 app.patch("/api/naloge/:id/dokoncaj", permit("admin", "grega"), async (req, res) => {
   try {
