@@ -22,6 +22,7 @@ model Produkt {
 
   lotProdukti    LotProdukt[]
   nakupPostavke  NakupPostavka[]
+  ponudbaMateriali PonudbaMaterial[]
 
   @@index([naziv_produkta])
 }
@@ -125,6 +126,7 @@ model Storitev {
   created_at     DateTime @default(now())
 
   nalogaStoritve DelovnaNalogaStoritev[]
+  ponudbaStoritve PonudbaStoritev[]
 
   @@index([naziv])
 }
@@ -233,4 +235,50 @@ model InventuraLot {
 
   @@index([inventura_id])
   @@index([lot_produkt_id])
+}
+
+model Ponudba {
+  id         Int      @id @default(autoincrement())
+  naziv      String
+  tip        String
+  created_at DateTime @default(now())
+
+  materiali     PonudbaMaterial[]
+  storitve      PonudbaStoritev[]
+  dnevniStrosek PonudbaDnevniStrosek?
+}
+
+model PonudbaMaterial {
+  id         Int   @id @default(autoincrement())
+  ponudba_id Int
+  produkt_id Int
+  kolicina   Float
+
+  ponudba Ponudba @relation(fields: [ponudba_id], references: [id], onDelete: Cascade)
+  produkt Produkt @relation(fields: [produkt_id], references: [id])
+
+  @@index([ponudba_id])
+  @@index([produkt_id])
+}
+
+model PonudbaStoritev {
+  id          Int   @id @default(autoincrement())
+  ponudba_id  Int
+  storitev_id Int
+  stevilo_ur  Float
+
+  ponudba  Ponudba  @relation(fields: [ponudba_id], references: [id], onDelete: Cascade)
+  storitev Storitev @relation(fields: [storitev_id], references: [id])
+
+  @@index([ponudba_id])
+  @@index([storitev_id])
+}
+
+model PonudbaDnevniStrosek {
+  id             Int     @id @default(autoincrement())
+  ponudba_id     Int     @unique
+  dnevni_strosek Decimal @db.Decimal(12, 2)
+  stevilo_dni    Int
+
+  ponudba Ponudba @relation(fields: [ponudba_id], references: [id], onDelete: Cascade)
 }

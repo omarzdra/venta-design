@@ -403,8 +403,17 @@ app.get("/api/zaloga", async (req, res) => {
 });
 
 app.get("/api/lot_produkti", async (req, res) => {
-  const where = { kolicina_tm: { gt: 0 } };
+  const where = {};
   if (req.query.produkt_id) where.produkt_id = Number(req.query.produkt_id);
+  const includeIds = req.query.include_ids ? String(req.query.include_ids).split(",").map(Number).filter(Boolean) : [];
+  if (includeIds.length) {
+    where.OR = [
+      { kolicina_tm: { gt: 0 } },
+      { id: { in: includeIds } }
+    ];
+  } else {
+    where.kolicina_tm = { gt: 0 };
+  }
   const lots = await prisma.lotProdukt.findMany({ where, include: { produkt: true }, orderBy: { datum_prevzema: "desc" } });
   res.json(lots.map((lot) => {
     const item = { ...lot, kolicina_m2: calcM2(lot.kolicina_tm, lot.produkt) };
@@ -600,7 +609,66 @@ app.post("/api/nakupi", permit("admin"), async (req, res) => {
   }
 });
 
-async function syncNalogaMaterials(tx, nalogaId, nextMaterials, nextStoritve = [], nextDnevniStrosek = null) {
+app.put("/api/nakupi/:id", permit("admin"), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const nakup = await prisma.nakup.findUnique({ where: { id }, include: { postavke: { include: { lotProdukt: true, produkt: true } } } });
+    if (!nakup) return res.status(404).json({ message: "Nakup ne obstaja." });
+    const postavke = Array.isArray(req.body.postavke) ? req.body.postavke : [];
+    await prisma.$transaction(async (tx) => {
+      for (const p of postavke) {
+        if (!p.id) continue;
+        const existing = nakup.postavke.find((ep) => ep.id === Number(p.id));
+        if (!existing) continue;
+        const ddv = assertDdv(p.ddv ?? existing.ddv);
+        const neto = toNumber(p.neto_cena, Number(existing.neto_cena));
+        const bruto = neto * (1 + ddv / 100);
+        await tx.nakupPostavka.update({ where: { id: Number(p.id) }, data: { opis: p.opis !== undefined ? String(p.opis) : existing.opis, neto_cena: moneyInput(neto, 0), ddv, bruto_cena: moneyInput(bruto, 0) } });
+        if (existing.lot_produkt_id && existing.kolicina_m2 && Number(existing.kolicina_m2) > 0) {
+          await tx.lotProdukt.update({ where: { id: existing.lot_produkt_id }, data: { nabavna_cena: moneyInput(neto / Number(existing.kolicina_m2), 0) } });
+        } else if (existing.lot_produkt_id && existing.kolicina_tm && Number(existing.kolicina_tm) > 0) {
+          await tx.lotProdukt.update({ where: { id: existing.lot_produkt_id }, data: { nabavna_cena: moneyInput(neto / Number(existing.kolicina_tm), 0) } });
+        }
+      }
+      const allPostavke = await tx.nakupPostavka.findMany({ where: { nakup_id: id } });
+      const neto_znesek = allPostavke.reduce((s, p) => s + Number(p.neto_cena), 0);
+      const bruto_znesek = allPostavke.reduce((s, p) => s + Number(p.bruto_cena), 0);
+      await tx.nakup.update({ where: { id }, data: { datum: req.body.datum ? dateOnly(req.body.datum) : undefined, dobavitelj: req.body.dobavitelj ? String(req.body.dobavitelj).trim() : undefined, stevilka_racuna: req.body.stevilka_racuna ? String(req.body.stevilka_racuna).trim() : undefined, neto_znesek: moneyInput(neto_znesek, 0), bruto_znesek: moneyInput(bruto_znesek, 0) } });
+    }, { timeout: 30000 });
+    const updated = await prisma.nakup.findUnique({ where: { id }, include: { postavke: { include: { produkt: true, lotProdukt: true } } } });
+    res.json(updated);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete("/api/nakupi/:id", permit("admin"), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const nakup = await prisma.nakup.findUnique({ where: { id }, include: { postavke: { include: { lotProdukt: true } } } });
+    if (!nakup) return res.status(404).json({ message: "Nakup ne obstaja." });
+    const lotIds = nakup.postavke.filter((p) => p.lot_produkt_id).map((p) => p.lot_produkt_id);
+    if (lotIds.length) {
+      const used = await prisma.delovnaNalogaMaterial.findFirst({ where: { lot_produkt_id: { in: lotIds } } });
+      if (used) return res.status(400).json({ message: "Nakupa ni mogoce zbrisati - material iz tega nakupa je ze porabljen na delovnih nalogih." });
+    }
+    await prisma.$transaction(async (tx) => {
+      if (lotIds.length) {
+        await tx.inventuraLot.deleteMany({ where: { lot_produkt_id: { in: lotIds } } });
+      }
+      await tx.nakupPostavka.deleteMany({ where: { nakup_id: id } });
+      if (lotIds.length) {
+        await tx.lotProdukt.deleteMany({ where: { id: { in: lotIds } } });
+      }
+      await tx.nakup.delete({ where: { id } });
+    }, { timeout: 15000 });
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+async function syncNalogaMaterials(tx, nalogaId, nextMaterials, nextStoritve = [], nextDnevniStrosek = null) { // TO BI LAHKO BILO BOLJŠE
   const existing = await tx.delovnaNalogaMaterial.findMany({ where: { delovna_naloga_id: nalogaId } });
   for (const old of existing) {
     await tx.lotProdukt.update({ where: { id: old.lot_produkt_id }, data: { kolicina_tm: { increment: old.kolicina_tm } } });
@@ -807,6 +875,24 @@ app.patch("/api/naloge/:id/potrdi", permit("admin"), async (req, res) => {
   }
 });
 
+app.delete("/api/naloge/:id", permit("admin"), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const naloga = await prisma.delovnaNaloga.findUnique({ where: { id }, include: { materiali: true, slike: true } });
+    if (!naloga) return res.status(404).json({ message: "Naloga ne obstaja." });
+    await prisma.$transaction(async (tx) => {
+      for (const m of naloga.materiali) {
+        await tx.lotProdukt.update({ where: { id: m.lot_produkt_id }, data: { kolicina_tm: { increment: m.kolicina_tm } } });
+      }
+      await tx.delovnaNaloga.delete({ where: { id } });
+    }, { timeout: 15000 });
+    if (naloga.slike?.length) await deleteNalogaStorageUrls(naloga.slike.map((s) => s.url)).catch(() => {});
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 app.delete("/api/naloge/:id/slike/:slikaId", permit("admin", "grega"), async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -865,6 +951,40 @@ app.post("/api/prihodki", permit("admin"), async (req, res) => {
   }
 });
 
+app.put("/api/prihodki/:id", permit("admin"), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const existing = await prisma.prihodekManual.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ message: "Prihodek ne obstaja." });
+    const ddv = req.body.ddv !== undefined ? assertDdv(req.body.ddv) : existing.ddv;
+    const neto = req.body.neto_znesek !== undefined ? toNumber(req.body.neto_znesek, 0) : Number(existing.neto_znesek);
+    const updated = await prisma.prihodekManual.update({
+      where: { id },
+      data: {
+        datum: req.body.datum ? dateOnly(req.body.datum) : undefined,
+        opis: req.body.opis ? String(req.body.opis) : undefined,
+        narocnik: req.body.narocnik !== undefined ? (req.body.narocnik || null) : undefined,
+        stevilka_racuna: req.body.stevilka_racuna !== undefined ? (req.body.stevilka_racuna || null) : undefined,
+        neto_znesek: moneyInput(neto, 0),
+        ddv,
+        bruto_znesek: moneyInput(neto * (1 + ddv / 100), 0)
+      }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete("/api/prihodki/:id", permit("admin"), async (req, res) => {
+  try {
+    await prisma.prihodekManual.delete({ where: { id: Number(req.params.id) } });
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 app.get("/api/analiza/summary", permit("admin"), async (req, res) => {
   const dateWhere = dateRangeWhere(req.query.datum_od, req.query.datum_do);
   const [naloge, prihodki, nakupi] = await Promise.all([
@@ -885,7 +1005,10 @@ app.get("/api/analiza/summary", permit("admin"), async (req, res) => {
   const skupni_prihodi_bruto = Number(naloge._sum.cena_dela_bruto || 0) + Number(naloge._sum.cena_materiala || 0) + Number(prihodki._sum.bruto_znesek || 0);
   const skupni_stroski_neto = Number(nakupi._sum.neto_znesek || 0);
   const skupni_stroski_bruto = Number(nakupi._sum.bruto_znesek || 0);
-  res.json({ skupni_prihodi_neto, skupni_prihodi_bruto, skupni_stroski_neto, skupni_stroski_bruto, razlika_neto: skupni_prihodi_neto - skupni_stroski_neto, razlika_bruto: skupni_prihodi_bruto - skupni_stroski_bruto });
+  const ddv_prihodki = skupni_prihodi_bruto - skupni_prihodi_neto;
+  const ddv_stroski = skupni_stroski_bruto - skupni_stroski_neto;
+  const razlika_ddv = ddv_prihodki - ddv_stroski;
+  res.json({ skupni_prihodi_neto, skupni_prihodi_bruto, skupni_stroski_neto, skupni_stroski_bruto, razlika_neto: skupni_prihodi_neto - skupni_stroski_neto, razlika_bruto: skupni_prihodi_bruto - skupni_stroski_bruto, ddv_prihodki, ddv_stroski, razlika_ddv });
 });
 
 app.get("/api/analiza/prodaja", permit("admin"), async (req, res) => {
@@ -897,7 +1020,9 @@ app.get("/api/analiza/prodaja", permit("admin"), async (req, res) => {
       { kontakt_ime: { contains: search, mode: "insensitive" } },
       { stevilka_delovnega_naloga: { contains: search, mode: "insensitive" } },
       { materiali: { some: { lotProdukt: { produkt: { naziv_produkta: { contains: search, mode: "insensitive" } } } } } },
-      { materiali: { some: { lotProdukt: { produkt: { koda: { contains: search, mode: "insensitive" } } } } } }
+      { materiali: { some: { lotProdukt: { produkt: { koda: { contains: search, mode: "insensitive" } } } } } },
+      { vozilo: { is: { registrska_stevilka: { contains: search, mode: "insensitive" } } } },
+      { vozilo: { is: { stevilka_sasije: { contains: search, mode: "insensitive" } } } }
     ];
   }
   const [naloge, prihodki] = await Promise.all([
@@ -908,6 +1033,51 @@ app.get("/api/analiza/prodaja", permit("admin"), async (req, res) => {
     ...naloge.map((n) => ({ ...n, izvor_tip: "delovna_naloga", neto_znesek: Number(n.cena_dela_neto || 0) + Number(n.cena_materiala || 0), bruto_znesek: Number(n.cena_dela_bruto || 0) + Number(n.cena_materiala || 0) })),
     ...prihodki.map((p) => ({ ...p, izvor_tip: "drugo" }))
   ].sort((a, b) => new Date(b.datum) - new Date(a.datum)));
+});
+
+app.get("/api/ponudbe", permit("admin"), async (req, res) => {
+  const ponudbe = await prisma.ponudba.findMany({
+    orderBy: { created_at: "desc" },
+    include: {
+      materiali: { include: { produkt: true } },
+      storitve: { include: { storitev: true } },
+      dnevniStrosek: true
+    }
+  });
+  res.json(ponudbe);
+});
+
+app.post("/api/ponudbe", permit("admin"), async (req, res) => {
+  try {
+    requireFields(req.body, ["naziv", "tip"]);
+    const ponudba = await prisma.$transaction(async (tx) => {
+      const p = await tx.ponudba.create({ data: { naziv: String(req.body.naziv).trim(), tip: String(req.body.tip) } });
+      for (const m of req.body.materiali || []) {
+        if (!m.produkt_id || !m.kolicina) continue;
+        await tx.ponudbaMaterial.create({ data: { ponudba_id: p.id, produkt_id: Number(m.produkt_id), kolicina: toNumber(m.kolicina, 0) } });
+      }
+      for (const s of req.body.storitve || []) {
+        if (!s.storitev_id || !s.stevilo_ur) continue;
+        await tx.ponudbaStoritev.create({ data: { ponudba_id: p.id, storitev_id: Number(s.storitev_id), stevilo_ur: toNumber(s.stevilo_ur, 0) } });
+      }
+      if (toNumber(req.body.dnevniStrosek?.dnevni_strosek, 0) > 0) {
+        await tx.ponudbaDnevniStrosek.create({ data: { ponudba_id: p.id, dnevni_strosek: moneyInput(toNumber(req.body.dnevniStrosek.dnevni_strosek), 0), stevilo_dni: parseInt(req.body.dnevniStrosek.stevilo_dni, 10) || 1 } });
+      }
+      return tx.ponudba.findUnique({ where: { id: p.id }, include: { materiali: { include: { produkt: true } }, storitve: { include: { storitev: true } }, dnevniStrosek: true } });
+    });
+    res.status(201).json(ponudba);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete("/api/ponudbe/:id", permit("admin"), async (req, res) => {
+  try {
+    await prisma.ponudba.delete({ where: { id: Number(req.params.id) } });
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 });
 
 app.use((err, req, res, next) => res.status(500).json({ message: err.message }));

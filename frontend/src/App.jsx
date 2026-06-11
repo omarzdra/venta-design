@@ -143,13 +143,14 @@ function MaterialRowItem({ row, idx, lots, update, remove }) {
   const isTabla = produkt?.tip === "tabla";
   const tm = row.kolicina_tm || "";
   const m2 = row.kolicina_m2 !== undefined ? row.kolicina_m2 : (produkt?.sirina && tm ? (Number(tm) * produkt.sirina).toFixed(2) : isTabla ? tm : "");
-  const overStock = lot && Number(row.kolicina_tm || 0) > Number(lot.kolicina_tm || 0);
+  const availableQty = Number(lot?.kolicina_tm || 0) + Number(row.original_kolicina_tm || 0);
+  const overStock = lot && Number(row.kolicina_tm || 0) > availableQty;
   const options = lots.map((l) => ({ value: l.id, label: `${l.lot_stevilka || "/"} - ${l.produkt?.koda} - ${l.produkt?.naziv_produkta}`, sub: `${l.produkt?.tip === "adr" ? "kos" : l.produkt?.tip === "tabla" ? "m2" : "tm"}: ${Number(l.kolicina_tm).toFixed(2)}` }));
   return <div className="material-row">
     <SearchSelect options={options} value={row.lot_produkt_id} onChange={(val) => update(idx, { lot_produkt_id: val, kolicina_tm: "", kolicina_m2: "" })} placeholder="Izberi LOT ali material..." />
     {isAdr ? <><input type="number" min="0" step="0.01" value={tm} onChange={(e) => update(idx, { kolicina_tm: e.target.value, kolicina_m2: "" })} placeholder="Kolicina (kos)" /><div /></> : isTabla ? <><input type="number" min="0" step="0.01" value={tm} onChange={(e) => update(idx, { kolicina_tm: e.target.value, kolicina_m2: e.target.value })} placeholder="Kolicina m2" /><div /></> : <><input type="number" min="0" step="0.01" value={tm} onChange={(e) => update(idx, { kolicina_tm: e.target.value, kolicina_m2: produkt?.sirina ? (Number(e.target.value) * produkt.sirina).toFixed(2) : "" })} placeholder="Kolicina tm" /><input type="number" min="0" step="0.01" value={m2} onChange={(e) => update(idx, { kolicina_m2: e.target.value, kolicina_tm: produkt?.sirina ? (Number(e.target.value) / produkt.sirina).toFixed(2) : e.target.value })} placeholder="Kolicina m2" /></>}
     <button type="button" className="icon-btn danger" onClick={() => remove(idx)}>x</button>
-    {overStock && <div className="alert-inline">Vpisana kolicina ({Number(row.kolicina_tm || 0).toFixed(2)}) presega razpolozljivo zalogo ({Number(lot.kolicina_tm || 0).toFixed(2)}).</div>}
+    {overStock && <div className="alert-inline">Vpisana kolicina ({Number(row.kolicina_tm || 0).toFixed(2)}) presega razpolozljivo zalogo ({availableQty.toFixed(2)}).</div>}
   </div>;
 }
 
@@ -158,7 +159,7 @@ function MaterialRows({ rows, setRows, lots, showPrices = true }) {
   const remove = (i) => setRows(rows.filter((_, idx) => idx !== i));
   const overStock = rows.some((row) => {
     const lot = lots.find((l) => Number(l.id) === Number(row.lot_produkt_id));
-    return lot && Number(row.kolicina_tm || 0) > Number(lot.kolicina_tm || 0);
+    return lot && Number(row.kolicina_tm || 0) > Number(lot.kolicina_tm || 0) + Number(row.original_kolicina_tm || 0);
   });
   return <div className="form-section"><div className="section-head"><h3>Poraba materiala</h3><button type="button" className="btn secondary" onClick={() => setRows([...rows, { lot_produkt_id: "", kolicina_tm: "", kolicina_m2: "" }])}>+ Dodaj material</button></div>{rows.map((row, i) => <MaterialRowItem key={i} idx={i} row={row} lots={lots} update={update} remove={remove} />)}{showPrices && <div className="total-line"><span>Material nabavno: <strong>{money(calcMaterialCost(rows, lots))}</strong></span><span>Material prodajno: <strong>{money(calcMaterialTotal(rows, lots))}</strong></span></div>}{overStock && <div className="alert-inline">Popravi porabo materiala, ker ena od vrstic presega zalogo.</div>}</div>;
 }
@@ -232,7 +233,7 @@ function NalogaForm({ lots, storitve, initial, role, onSave, onConfirm, onCancel
   const set = (patch) => setForm((prev) => ({ ...prev, ...patch }));
   const overStock = (form.materiali || []).some((row) => {
     const lot = lots.find((l) => Number(l.id) === Number(row.lot_produkt_id));
-    return lot && Number(row.kolicina_tm || 0) > Number(lot.kolicina_tm || 0);
+    return lot && Number(row.kolicina_tm || 0) > Number(lot.kolicina_tm || 0) + Number(row.original_kolicina_tm || 0);
   });
   useEffect(() => {
     if (isEdit) return undefined;
@@ -314,7 +315,7 @@ function InventuraModal({ onClose, notify }) {
   }
   const done = selected?.loti?.filter((l) => l.oznacen).length || 0;
   const total = selected?.loti?.length || 0;
-  return <Modal title="Inventure" onClose={onClose}><div className="grid-layout"><section><div className="form-actions" style={{ justifyContent: "space-between" }}><button className="btn secondary" onClick={onClose}>Nazaj</button><label>Datum<input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} /></label><button className="btn primary" onClick={create}>+ Nova inventura</button></div><div className="dense-list">{inventure.map((inv) => <button key={inv.id} className="work-item" onClick={() => openInventura(inv.id)}><div><strong>{d(inv.datum)}</strong><span>{inv.loti_count || inv.loti?.length || 0} LOT zapisov</span></div><span className={cx("badge", inv.zakljucena && "potrjena")}>{inv.zakljucena ? "Zakljucena" : "V teku"}</span></button>)}</div></section><aside>{detailLoading ? <div className="panel empty-side">Nalaganje inventure...</div> : selected ? <section className="panel"><div className="section-head"><h2>{d(selected.datum)}</h2></div><p className="muted">{done} / {total} oznacenih</p>{done === total && total > 0 && <div className="alert-inline">Inventura zakljucena!</div>}<div className="dense-list">{selected.loti.map((l) => { const p = l.lotProdukt.produkt; return <label className="check" key={l.id}><input type="checkbox" checked={l.oznacen} onChange={() => toggle(l.lot_produkt_id)} />{p.tip === "adr" ? "" : `LOT ${l.lotProdukt.lot_stevilka || "/"} - `}{p.koda} - {p.naziv_produkta} - {Number(l.lotProdukt.kolicina_tm).toFixed(2)} {p.tip === "adr" ? "kos" : p.tip === "tabla" ? "m2" : "tm"}</label>; })}</div></section> : <div className="panel empty-side">Izberi inventuro.</div>}</aside></div></Modal>;
+  return <Modal title="Inventure" onClose={onClose}><div className="grid-layout"><section><div className="form-actions" style={{ justifyContent: "space-between" }}><button className="btn secondary" onClick={onClose}>Nazaj</button><label>Datum<input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} /></label><button className="btn primary" onClick={create}>+ Nova inventura</button></div><div className="dense-list">{inventure.map((inv) => <button key={inv.id} className="work-item" onClick={() => openInventura(inv.id)}><div><strong>{d(inv.datum)}</strong><span>{inv.loti_count || inv.loti?.length || 0} LOT kosov</span></div><span className={cx("badge", inv.zakljucena && "potrjena")}>{inv.zakljucena ? "Zakljucena" : "V teku"}</span></button>)}</div></section><aside>{detailLoading ? <div className="panel empty-side">Nalaganje inventure...</div> : selected ? <section className="panel"><div className="section-head"><h2>{d(selected.datum)}</h2></div><p className="muted">{done} / {total} oznacenih</p>{done === total && total > 0 && <div className="alert-inline">Inventura zakljucena!</div>}<div className="dense-list">{selected.loti.map((l) => { const p = l.lotProdukt.produkt; return <label className="check" key={l.id}><input type="checkbox" checked={l.oznacen} onChange={() => toggle(l.lot_produkt_id)} />{p.tip === "adr" ? "" : `LOT ${l.lotProdukt.lot_stevilka || "/"} - `}{p.koda} - {p.naziv_produkta} - {Number(l.lotProdukt.kolicina_tm).toFixed(2)} {p.tip === "adr" ? "kos" : p.tip === "tabla" ? "m2" : "tm"}</label>; })}</div></section> : <div className="panel empty-side">Izberi inventuro.</div>}</aside></div></Modal>;
 }
 
 function ZalogaView({ data, role, reload, notify }) {
@@ -351,15 +352,12 @@ function ZalogaView({ data, role, reload, notify }) {
             </div>
           </button>
           {expanded === p.id && <div className="lot-list">{(p.lotProdukti || []).length === 0 ? <p className="muted">Ni aktivnih LOTov.</p> : p.lotProdukti.map((lot) => {
-            const lotQtyUnit = p.tip === "adr" ? "kos" : p.tip === "tabla" ? "m2" : "tm";
             return <div className="lot-row inventory-lot-row" key={lot.id}>
               <div className="lot-identity">
                 <span>LOT</span>
                 {p.tip !== "adr" && edit[lot.id] !== undefined ? <input value={edit[lot.id]} onChange={(e) => setEdit({ ...edit, [lot.id]: e.target.value })} /> : <strong>{p.tip === "adr" ? "/" : lot.lot_stevilka || "/"}</strong>}
               </div>
-              <div><span>Kolicina</span><strong>{Number(lot.kolicina_tm).toFixed(2)} {lotQtyUnit}</strong>{p.tip === "folija" && <small>{lot.kolicina_m2 ? `${Number(lot.kolicina_m2).toFixed(2)} m2` : "/"}</small>}</div>
-              {showCosts && <div><span>Nabavna cena</span><strong>{money(lot.nabavna_cena)}</strong><small>{p.tip === "adr" ? "/kos" : "/m2"}</small></div>}
-              {showCosts && <div><span>Prodajna cena</span><strong>{money(lot.prodajna_cena)}</strong><small>{p.tip === "adr" ? "/kos" : "/m2"}</small></div>}
+              <div>{p.tip === "folija" ? <><div className="lot-qty-row"><span>{Number(lot.kolicina_tm).toFixed(2)} tm</span>{showCosts && <span className="muted">{money(Number(lot.nabavna_cena))} nab/m2</span>}{showCosts && <span className="muted">{money(Number(lot.prodajna_cena))} prod/m2</span>}</div>{p.sirina && <div className="lot-qty-row secondary"><span>{(Number(lot.kolicina_tm) * Number(p.sirina)).toFixed(2)} m2</span>{showCosts && <span className="muted">{money(Number(lot.nabavna_cena) / Number(p.sirina))} nab/tm</span>}{showCosts && <span className="muted">{money(Number(lot.prodajna_cena) / Number(p.sirina))} prod/tm</span>}</div>}</> : p.tip === "tabla" ? <div className="lot-qty-row"><span>{Number(lot.kolicina_tm).toFixed(2)} m2</span>{showCosts && <span className="muted">{money(Number(lot.nabavna_cena))} nab/m2</span>}{showCosts && <span className="muted">{money(Number(lot.prodajna_cena))} prod/m2</span>}</div> : <div className="lot-qty-row"><span>{Number(lot.kolicina_tm).toFixed(0)} kos</span>{showCosts && <span className="muted">{money(Number(lot.nabavna_cena))} nab/kos</span>}{showCosts && <span className="muted">{money(Number(lot.prodajna_cena))} prod/kos</span>}</div>}</div>
               {showCosts && <div><span>Marza</span><strong>{money(Number(lot.prodajna_cena || 0) - Number(lot.nabavna_cena || 0))}</strong><small>na enoto</small></div>}
               {canEdit && p.tip !== "adr" && (edit[lot.id] !== undefined ? <button className="btn secondary" onClick={() => saveLot(lot.id)}>Shrani</button> : <button className="icon-btn" title="Uredi LOT" aria-label="Uredi LOT" onClick={() => setEdit({ ...edit, [lot.id]: lot.lot_stevilka || "" })}><PencilIcon /></button>)}
             </div>;
@@ -388,6 +386,13 @@ function DetailModal({ naloga, role, onClose, onEdit, reload, notify }) {
   const razlikaCena = Number(naloga.cena_dela_neto || 0) - predvidenaVrednost;
   async function done() { await api.dokoncajNaloga(naloga.id); notify("Naloga je oznacena kot dokoncana."); if (reload) await reload(); onClose(); }
   async function confirm() { await api.potrdiNaloga(naloga.id, {}); notify("Naloga je potrjena."); if (reload) await reload(); onClose(); }
+  async function deleteNaloga() {
+    if (!window.confirm("Ali res zelis zbrisati ta delovni nalog?")) return;
+    await api.deleteNaloga(naloga.id);
+    notify("Delovni nalog je izbrisan.");
+    if (reload) await reload();
+    onClose();
+  }
   async function removeImage(slikaId) { await api.deleteNalogaSlika(naloga.id, slikaId); notify("Slika je odstranjena."); if (reload) await reload(); onClose(); }
   return (
     <Modal title={naloga.naziv_projekta} onClose={onClose}>
@@ -407,7 +412,7 @@ function DetailModal({ naloga, role, onClose, onEdit, reload, notify }) {
       {showCosts && naloga.dnevniStrosek && <div className="total-line">Dnevni strosek: {money(naloga.dnevniStrosek.dnevni_strosek)}/dan x {naloga.dnevniStrosek.stevilo_dni} dni = <strong>{money(dnevniSale)}</strong></div>}
       {showCosts && <div className="total-line"><span>Predviden strosek projekta: <strong>{money(predvideniStrosek)}</strong></span><span>Predvidena vrednost projekta: <strong>{money(predvidenaVrednost)}</strong></span>{Number(naloga.cena_dela_neto || 0) > 0 && <span>Razlika: <strong>{money(razlikaCena)}</strong></span>}</div>}
       {naloga.slike?.length > 0 && <><h3>Slike</h3><div className="thumbs">{naloga.slike.map((s) => <div className="thumb" key={s.id}><button type="button" className="thumb-preview" title="Odpri sliko" onClick={() => setViewerImage(s)}><img src={s.url} alt="Naloga" /></button><button type="button" title="Odstrani sliko" onClick={() => removeImage(s.id)}>x</button></div>)}</div></>}
-      <div className="form-actions">{canEditNaloga && <button className="btn secondary" onClick={onEdit}>Uredi</button>}{canComplete && <button className="btn secondary" onClick={done}>Oznaci kot dokoncano</button>}{role === "admin" && naloga.status !== "potrjena" && <button className="btn primary" disabled={!canConfirm} onClick={confirm}>Potrdi nalog</button>}</div>
+      <div className="form-actions">{canEditNaloga && <button className="btn secondary" onClick={onEdit}>Uredi</button>}{canComplete && <button className="btn secondary" onClick={done}>Oznaci kot dokoncano</button>}{role === "admin" && <button className="btn secondary danger" onClick={deleteNaloga}>Zbrisi nalog</button>}{role === "admin" && naloga.status !== "potrjena" && <button className="btn primary" disabled={!canConfirm} onClick={confirm}>Potrdi nalog</button>}</div>
       <PictureViewer image={viewerImage} onClose={() => setViewerImage(null)} notify={notify} />
     </Modal>
   );
@@ -420,13 +425,24 @@ function EvidenceView({ lots, storitve, role, reload, notify }) {
   const [selected, setSelected] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [editLots, setEditLots] = useState([]);
   const load = useCallback(() => api.naloge({ tip, ...filters }).then(setItems).catch((e) => notify(e.message, "error")), [tip, filters, notify]);
   useEffect(() => { load(); }, [load]);
-  async function save(payload) { await api.updateNaloga(editing.id, payload); notify("Naloga je posodobljena."); setEditing(null); await load(); reload(); }
-  async function confirmEdit(payload) { await api.updateNaloga(editing.id, payload); const updated = await api.potrdiNaloga(editing.id, {}); notify("Naloga je potrjena."); setEditing(null); setSelected(updated); await load(); await reload(); }
+  async function save(payload) { await api.updateNaloga(editing.id, payload); notify("Naloga je posodobljena."); setEditing(null); setEditLots([]); await load(); reload(); }
+  async function confirmEdit(payload) { await api.updateNaloga(editing.id, payload); const updated = await api.potrdiNaloga(editing.id, {}); notify("Naloga je potrjena."); setEditing(null); setEditLots([]); setSelected(updated); await load(); await reload(); }
   async function openDetail(id) { setDetailLoading(true); try { setSelected(await api.naloga(id)); } catch (e) { notify(e.message, "error"); } finally { setDetailLoading(false); } }
-  const toEdit = (selectedNaloga) => ({ ...selectedNaloga, slike: selectedNaloga.slike?.map((s) => s.url) || [], poskodbe: selectedNaloga.poskodbe?.map((p) => p.opis) || [], materiali: selectedNaloga.materiali?.map((m) => ({ lot_produkt_id: m.lot_produkt_id, kolicina_tm: m.kolicina_tm })) || [], storitve: selectedNaloga.storitve?.map((s) => ({ storitev_id: s.storitev_id, stevilo_ur: s.stevilo_ur })) || [], dnevniStrosek: selectedNaloga.dnevniStrosek || { dnevni_strosek: "", stevilo_dni: "" } });
-  return <div className="grid-layout"><section className="panel"><div className="segmented"><button className={cx(tip === "splosno" && "active")} onClick={() => setTip("splosno")}>Evidenca: Splosno</button><button className={cx(tip === "vozila" && "active")} onClick={() => setTip("vozila")}>Evidenca: Vozila</button><button className={cx(tip === "vb_tisk" && "active")} onClick={() => setTip("vb_tisk")}>Evidenca: VB tisk</button></div><div className="filters" style={{ alignItems: "end" }}><label>Iskanje<input placeholder="Isci naloge" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} /></label><label>Datum od<input type="date" value={filters.datum_od} onChange={(e) => setFilters({ ...filters, datum_od: e.target.value })} /></label><label>Datum do<input type="date" value={filters.datum_do} onChange={(e) => setFilters({ ...filters, datum_do: e.target.value })} /></label><label>Status<select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}><option value="">Vsi statusi</option><option value="v_izdelavi">V izdelavi</option><option value="dokoncana">Dokoncana</option><option value="potrjena">Potrjena</option></select></label><button className="btn secondary" onClick={() => setFilters({ search: "", status: "", datum_od: "", datum_do: "" })}>Pocisti filtre</button></div><div className="dense-list">{items.length === 0 && <p className="muted">Ni nalogov za prikaz.</p>}{items.map((n) => <button key={n.id} className="work-item" onClick={() => openDetail(n.id)} disabled={detailLoading}><div><strong>{n.kontakt_ime}</strong><span>{n.naziv_projekta} - {d(n.datum)}</span><span>{(n.opis || "").slice(0, 60)}</span></div><Badge value={n.status} /></button>)}</div></section><aside><div className="panel empty-side">{detailLoading ? "Nalaganje podrobnosti..." : "Izberi nalogo za podrobnosti ali urejanje."}</div></aside>{selected && <DetailModal naloga={selected} role={role} reload={async () => { await load(); await reload(); }} notify={notify} onClose={() => setSelected(null)} onEdit={() => { setEditing(toEdit(selected)); setSelected(null); }} />}{editing && <Modal title={`Uredi nalog ${editing.stevilka_delovnega_naloga || ""}`} onClose={() => setEditing(null)} fullscreen><NalogaForm key={editing.id} initial={editing} lots={lots} storitve={storitve} role={role} onSave={save} onConfirm={confirmEdit} onCancel={() => setEditing(null)} notify={notify} /></Modal>}</div>;
+  const toEdit = (selectedNaloga) => ({ ...selectedNaloga, slike: selectedNaloga.slike?.map((s) => s.url) || [], poskodbe: selectedNaloga.poskodbe?.map((p) => p.opis) || [], materiali: selectedNaloga.materiali?.map((m) => ({ lot_produkt_id: m.lot_produkt_id, kolicina_tm: m.kolicina_tm, original_kolicina_tm: m.kolicina_tm })) || [], storitve: selectedNaloga.storitve?.map((s) => ({ storitev_id: s.storitev_id, stevilo_ur: s.stevilo_ur })) || [], dnevniStrosek: selectedNaloga.dnevniStrosek || { dnevni_strosek: "", stevilo_dni: "" } });
+  async function openEdit(naloga) {
+    const usedIds = (naloga.materiali || []).map((m) => m.lot_produkt_id).filter(Boolean);
+    setEditLots(usedIds.length ? await api.lots(usedIds) : lots);
+    setEditing(toEdit(naloga));
+    setSelected(null);
+  }
+  function closeEdit() {
+    setEditing(null);
+    setEditLots([]);
+  }
+  return <div className="grid-layout"><section className="panel"><div className="segmented"><button className={cx(tip === "splosno" && "active")} onClick={() => setTip("splosno")}>Evidenca: Splosno</button><button className={cx(tip === "vozila" && "active")} onClick={() => setTip("vozila")}>Evidenca: Vozila</button><button className={cx(tip === "vb_tisk" && "active")} onClick={() => setTip("vb_tisk")}>Evidenca: VB tisk</button></div><div className="filters" style={{ alignItems: "end" }}><label>Iskanje<input placeholder="Isci naloge" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} /></label><label>Datum od<input type="date" value={filters.datum_od} onChange={(e) => setFilters({ ...filters, datum_od: e.target.value })} /></label><label>Datum do<input type="date" value={filters.datum_do} onChange={(e) => setFilters({ ...filters, datum_do: e.target.value })} /></label><label>Status<select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}><option value="">Vsi statusi</option><option value="v_izdelavi">V izdelavi</option><option value="dokoncana">Dokoncana</option><option value="potrjena">Potrjena</option></select></label><button className="btn secondary" onClick={() => setFilters({ search: "", status: "", datum_od: "", datum_do: "" })}>Pocisti filtre</button></div><div className="dense-list">{items.length === 0 && <p className="muted">Ni nalogov za prikaz.</p>}{items.map((n) => <button key={n.id} className="work-item" onClick={() => openDetail(n.id)} disabled={detailLoading}><div><strong>{n.kontakt_ime}</strong><span>{n.naziv_projekta} - {d(n.datum)}</span><span>{(n.opis || "").slice(0, 60)}</span></div><Badge value={n.status} /></button>)}</div></section><aside><div className="panel empty-side">{detailLoading ? "Nalaganje podrobnosti..." : "Izberi nalogo za podrobnosti ali urejanje."}</div></aside>{selected && <DetailModal naloga={selected} role={role} reload={async () => { await load(); await reload(); }} notify={notify} onClose={() => setSelected(null)} onEdit={() => openEdit(selected)} />}{editing && <Modal title={`Uredi nalog ${editing.stevilka_delovnega_naloga || ""}`} onClose={closeEdit} fullscreen><NalogaForm key={editing.id} initial={editing} lots={editLots.length ? editLots : lots} storitve={storitve} role={role} onSave={save} onConfirm={confirmEdit} onCancel={closeEdit} notify={notify} /></Modal>}</div>;
 }
 
 function NakupForm({ produkti, onSave, onClose, notify, reload }) {
@@ -439,36 +455,99 @@ function NakupForm({ produkti, onSave, onClose, notify, reload }) {
   return <form className="panel" onSubmit={submit}><div className="form-grid"><label>Datum<input required type="date" max={new Date().toISOString().slice(0, 10)} value={form.datum} onChange={(e) => setForm({ ...form, datum: e.target.value })} /></label><label>Dobavitelj<input required value={form.dobavitelj} onChange={(e) => setForm({ ...form, dobavitelj: e.target.value })} /></label><label>Stevilka racuna<input required value={form.stevilka_racuna} onChange={(e) => setForm({ ...form, stevilka_racuna: e.target.value })} /></label></div><h3>Postavke racuna</h3>{rows.map((row, i) => { const produkt = produkti.find((p) => Number(p.id) === Number(row.produkt_id)); const kolicinaM2 = produkt ? materialQtyM2(row.kolicina_tm, produkt) : 0; const priceDiff = produkt && kolicinaM2 > 0 && Number(row.neto_cena || 0) > 0 && Math.abs((Number(row.neto_cena) / kolicinaM2) - Number(produkt.nabavna_cena)) > 0.01; return <div className="purchase-row" key={i}><select value={row.kategorija} onChange={(e) => setRow(i, { kategorija: e.target.value })}>{CATS.map((c) => <option key={c} value={c}>{CAT_LABEL[c]}</option>)}</select>{row.kategorija === "material" ? <div style={{ display: "flex", gap: "8px", flex: 1 }}><SearchSelect options={produkti.map((p) => ({ value: p.id, label: `${p.koda} - ${p.naziv_produkta}`, sub: p.dobavitelj || "" }))} value={row.produkt_id} onChange={(val) => setRow(i, { produkt_id: val })} placeholder="Izberi material" /><input style={{ width: "90px" }} value={row.lot_stevilka} onChange={(e) => setRow(i, { lot_stevilka: e.target.value })} placeholder="LOT st." /><input style={{ width: "90px" }} type="number" step="0.01" value={row.kolicina_tm} onChange={(e) => setRow(i, { kolicina_tm: e.target.value })} placeholder={produkt?.tip === "adr" ? "Kos" : produkt?.tip === "tabla" ? "m2" : "tm"} />{priceDiff && <span className="price-warn" title={`Prejsnja nabavna cena: ${produkt.nabavna_cena} EUR/m2`}>!</span>}</div> : <input style={{ flex: 1 }} value={row.opis} onChange={(e) => setRow(i, { opis: e.target.value })} placeholder="Opis" />}<input required type="number" step="0.01" value={row.neto_cena} onChange={(e) => setRow(i, { neto_cena: e.target.value })} placeholder="Neto" /><select value={row.ddv} onChange={(e) => setRow(i, { ddv: e.target.value })}><option value={0}>0%</option><option value={9.5}>9.5%</option><option value={22}>22%</option></select><strong>{money(row.bruto_cena)}</strong><button type="button" className="icon-btn danger" onClick={() => setForm({ ...form, postavke: form.postavke.filter((_, idx) => idx !== i) })}>x</button>{row.kategorija === "material" ? <button type="button" className="btn" onClick={() => setProductModal(true)}>+ Material</button> : <div />}</div>; })}<div className="form-actions"><button type="button" className="btn secondary" onClick={() => setForm({ ...form, postavke: [...form.postavke, { kategorija: "material", opis: "", produkt_id: "", lot_stevilka: "", kolicina_tm: "", neto_cena: "", ddv: 22 }] })}>+ Dodaj postavko</button><span>Skupni neto: <strong>{money(rows.reduce((s, p) => s + Number(p.neto_cena || 0), 0))}</strong></span><span>Skupni bruto: <strong>{money(rows.reduce((s, p) => s + p.bruto_cena, 0))}</strong></span><button type="button" className="btn secondary" onClick={onClose}>Zapri</button><button className="btn primary">Shrani nakup</button></div>{productModal && <ProductFormModal onClose={() => setProductModal(false)} onSaved={async () => { notify("Material je dodan."); await reload(); }} />}</form>;
 }
 
-function NakupDetailModal({ nakup, onClose }) {
-  const postavke = nakup.postavke || [];
+function NakupDetailModal({ nakup, onClose, notify, reload }) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState(() => ({
+    datum: nakup.datum?.slice(0, 10) || "",
+    dobavitelj: nakup.dobavitelj || "",
+    stevilka_racuna: nakup.stevilka_racuna || "",
+    postavke: (nakup.postavke || []).map((p) => ({ ...p, opis: p.opis || "", neto_cena: p.neto_cena || "", ddv: p.ddv ?? 22 }))
+  }));
+  const postavke = editing ? form.postavke : (nakup.postavke || []);
+  async function save(e) {
+    e.preventDefault();
+    await api.updateNakup(nakup.id, form);
+    notify("Nakup je posodobljen.");
+    await reload?.();
+    onClose();
+  }
+  async function del() {
+    if (!window.confirm("Ali res zelis zbrisati ta nakup?")) return;
+    await api.deleteNakup(nakup.id);
+    notify("Nakup je izbrisan.");
+    await reload?.();
+    onClose();
+  }
   return <Modal title={`Podrobnosti nakupa - ${nakup.stevilka_racuna || "Brez stevilke"}`} onClose={onClose}>
-    <div className="detail-grid">
-      <div><span>Datum</span><strong>{d(nakup.datum)}</strong></div>
-      <div><span>Dobavitelj</span><strong>{nakup.dobavitelj || "/"}</strong></div>
-      <div><span>Stevilka racuna</span><strong>{nakup.stevilka_racuna || "/"}</strong></div>
+    <form className="form-grid" onSubmit={save}>
+      <label>Datum<input disabled={!editing} type="date" value={form.datum} onChange={(e) => setForm({ ...form, datum: e.target.value })} /></label>
+      <label>Dobavitelj<input disabled={!editing} value={form.dobavitelj} onChange={(e) => setForm({ ...form, dobavitelj: e.target.value })} /></label>
+      <label>Stevilka racuna<input disabled={!editing} value={form.stevilka_racuna} onChange={(e) => setForm({ ...form, stevilka_racuna: e.target.value })} /></label>
+      <div className="detail-grid wide">
       <div><span>Stevilo postavk</span><strong>{postavke.length}</strong></div>
       <div><span>Neto skupaj</span><strong>{money(nakup.neto_znesek)}</strong></div>
       <div><span>Bruto skupaj</span><strong>{money(nakup.bruto_znesek)}</strong></div>
-    </div>
-    <h3>Postavke racuna</h3>
-    <table className="mobile-cards">
-      <thead><tr><th>Kategorija</th><th>Opis / material</th><th>LOT</th><th>Kolicina</th><th>Neto</th><th>DDV</th><th>Bruto</th></tr></thead>
-      <tbody>{postavke.map((p) => {
+      </div>
+      <h3 className="wide">Postavke racuna</h3>
+      <table className="mobile-cards wide">
+        <thead><tr><th>Kategorija</th><th>Opis / material</th><th>LOT</th><th>Kolicina</th><th>Neto</th><th>DDV</th><th>Bruto</th></tr></thead>
+        <tbody>{postavke.map((p, i) => {
         const produkt = p.produkt;
         const lot = p.lotProdukt;
         const unit = produkt?.tip === "adr" ? "kos" : produkt?.tip === "tabla" ? "m2" : "tm";
         const materialName = produkt ? `${produkt.koda} - ${produkt.naziv_produkta}` : p.opis;
+        const bruto = Number(p.neto_cena || 0) * (1 + Number(p.ddv || 0) / 100);
         return <tr key={p.id}>
           <td data-label="Kategorija">{CAT_LABEL[p.kategorija] || p.kategorija}</td>
-          <td data-label="Opis / material">{materialName || "/"}</td>
+          <td data-label="Opis / material">{editing ? <input value={p.opis || ""} onChange={(e) => setForm({ ...form, postavke: form.postavke.map((row, idx) => idx === i ? { ...row, opis: e.target.value } : row) })} /> : (materialName || "/")}</td>
           <td data-label="LOT">{p.kategorija === "material" ? (lot?.lot_stevilka || p.lot_stevilka || "/") : "/"}</td>
           <td data-label="Kolicina">{p.kategorija === "material" ? `${Number(p.kolicina_tm || 0).toFixed(2)} ${unit}` : "/"}</td>
-          <td data-label="Neto">{money(p.neto_cena)}</td>
-          <td data-label="DDV">{Number(p.ddv || 0)}%</td>
-          <td data-label="Bruto">{money(p.bruto_cena)}</td>
+          <td data-label="Neto">{editing ? <input type="number" step="0.01" value={p.neto_cena || ""} onChange={(e) => setForm({ ...form, postavke: form.postavke.map((row, idx) => idx === i ? { ...row, neto_cena: e.target.value } : row) })} /> : money(p.neto_cena)}</td>
+          <td data-label="DDV">{editing ? <select value={p.ddv || 0} onChange={(e) => setForm({ ...form, postavke: form.postavke.map((row, idx) => idx === i ? { ...row, ddv: e.target.value } : row) })}><option value={0}>0%</option><option value={9.5}>9.5%</option><option value={22}>22%</option></select> : `${Number(p.ddv || 0)}%`}</td>
+          <td data-label="Bruto">{money(editing ? bruto : p.bruto_cena)}</td>
         </tr>;
       })}</tbody>
-    </table>
+      </table>
+      <div className="form-actions wide"><button type="button" className="btn secondary" onClick={() => setEditing(!editing)}>{editing ? "Preklici urejanje" : "Uredi"}</button>{editing && <button className="btn primary">Shrani spremembe</button>}<button type="button" className="btn secondary danger" onClick={del}>Zbrisi nakup</button></div>
+    </form>
+  </Modal>;
+}
+
+function PrihodekDetailModal({ prihodek, onClose, notify, reload }) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState(() => ({
+    datum: prihodek.datum?.slice(0, 10) || "",
+    opis: prihodek.opis || "",
+    narocnik: prihodek.narocnik || "",
+    stevilka_racuna: prihodek.stevilka_racuna || "",
+    neto_znesek: prihodek.neto_znesek || "",
+    ddv: prihodek.ddv ?? 22
+  }));
+  async function save(e) {
+    e.preventDefault();
+    await api.updatePrihodek(prihodek.id, form);
+    notify("Prihodek je posodobljen.");
+    await reload?.();
+    onClose();
+  }
+  async function del() {
+    if (!window.confirm("Ali res zelis zbrisati ta prihodek?")) return;
+    await api.deletePrihodek(prihodek.id);
+    notify("Prihodek je izbrisan.");
+    await reload?.();
+    onClose();
+  }
+  return <Modal title="Podrobnosti prihodka" onClose={onClose}>
+    <form className="form-grid" onSubmit={save}>
+      <label>Datum<input disabled={!editing} type="date" value={form.datum} onChange={(e) => setForm({ ...form, datum: e.target.value })} /></label>
+      <label>Narocnik<input disabled={!editing} value={form.narocnik} onChange={(e) => setForm({ ...form, narocnik: e.target.value })} /></label>
+      <label>Opis<input disabled={!editing} value={form.opis} onChange={(e) => setForm({ ...form, opis: e.target.value })} /></label>
+      <label>Stevilka racuna<input disabled={!editing} value={form.stevilka_racuna} onChange={(e) => setForm({ ...form, stevilka_racuna: e.target.value })} /></label>
+      <label>Neto<input disabled={!editing} type="number" step="0.01" value={form.neto_znesek} onChange={(e) => setForm({ ...form, neto_znesek: e.target.value })} /></label>
+      <label>DDV<select disabled={!editing} value={form.ddv} onChange={(e) => setForm({ ...form, ddv: e.target.value })}><option value={0}>0%</option><option value={9.5}>9.5%</option><option value={22}>22%</option></select></label>
+      <label>Bruto<input readOnly value={money(Number(form.neto_znesek || 0) * (1 + Number(form.ddv || 0) / 100))} /></label>
+      <div className="form-actions wide"><button type="button" className="btn secondary" onClick={() => setEditing(!editing)}>{editing ? "Preklici urejanje" : "Uredi"}</button>{editing && <button className="btn primary">Shrani spremembe</button>}<button type="button" className="btn secondary danger" onClick={del}>Zbrisi prihodek</button></div>
+    </form>
   </Modal>;
 }
 
@@ -482,9 +561,10 @@ function AnalysisView({ produkti, reload, notify, role }) {
   const [sale, setSale] = useState(() => loadForm("prodaja") || { datum: "", opis: "", narocnik: "", stevilka_racuna: "", neto_znesek: "", ddv: 22 });
   const [nakupFilters, setNakupFilters] = useState({ search: "", znesek_od: "", znesek_do: "", datum_od: "", datum_do: "" });
   const [prodajaFilters, setProdajaFilters] = useState({ search: "", znesek_od: "", znesek_do: "", datum_od: "", datum_do: "", tip: "" });
+  const [summaryFilters, setSummaryFilters] = useState({ datum_od: "", datum_do: "" });
   const [detailNakup, setDetailNakup] = useState(null);
   const [detailSale, setDetailSale] = useState(null);
-  const loadSummary = useCallback(() => api.analizaSummary({}).then(setSummary).catch((e) => notify(e.message, "error")), [notify]);
+  const loadSummary = useCallback(() => api.analizaSummary(summaryFilters).then(setSummary).catch((e) => notify(e.message, "error")), [notify, summaryFilters]);
   const loadNakupi = useCallback(() => api.nakupi({}).then(setNakupi).catch((e) => notify(e.message, "error")), [notify]);
   const loadProdaja = useCallback(() => api.analizaProdaja({ search: prodajaFilters.search }).then(setProdaja).catch((e) => notify(e.message, "error")), [notify, prodajaFilters.search]);
   useEffect(() => { loadSummary(); }, [loadSummary]);
@@ -503,7 +583,7 @@ function AnalysisView({ produkti, reload, notify, role }) {
     if (prodajaFilters.tip && p.izvor_tip !== prodajaFilters.tip) return false;
     return true;
   });
-  return <div className="stack"><section className="kpi-grid"><div className={cx("kpi hero", (summary?.razlika_neto || 0) >= 0 ? "positive" : "negative")}><span>Razlika</span><strong>{money(summary?.razlika_neto)}</strong><small>Bruto {money(summary?.razlika_bruto)}</small></div><div className="kpi"><span>Skupni prihodki</span><strong>{money(summary?.skupni_prihodi_neto)}</strong><small>Bruto {money(summary?.skupni_prihodi_bruto)}</small></div><div className="kpi"><span>Skupni stroski</span><strong>{money(summary?.skupni_stroski_neto)}</strong><small>Bruto {money(summary?.skupni_stroski_bruto)}</small></div></section><section className="panel"><div className="section-head"><div className="segmented"><button className={cx(tab === "nakupi" && "active")} onClick={() => setTab("nakupi")}>NAKUPI</button><button className={cx(tab === "prodaja" && "active")} onClick={() => setTab("prodaja")}>PRODAJA</button></div>{tab === "nakupi" ? <button className="btn primary" onClick={() => setShowNakup(true)}>+ Dodaj nakup</button> : <button className="btn primary" onClick={() => setShowSale(true)}>+ Dodaj prodajo</button>}</div>{tab === "nakupi" && <div className="filters"><label>Iskanje<input value={nakupFilters.search} onChange={(e) => setNakupFilters({ ...nakupFilters, search: e.target.value })} /></label></div>}{tab === "prodaja" && <div className="filters"><label>Iskanje (Narocnik, St. DN, Material)<input value={prodajaFilters.search} onChange={(e) => setProdajaFilters({ ...prodajaFilters, search: e.target.value })} placeholder="Narocnik, st. DN, koda materiala..." /></label><label>Tip<select value={prodajaFilters.tip} onChange={(e) => setProdajaFilters({ ...prodajaFilters, tip: e.target.value })}><option value="">Vsi</option><option value="delovna_naloga">Delovna naloga</option><option value="drugo">Drugo</option></select></label></div>}{tab === "nakupi" ? <table className="mobile-cards"><thead><tr><th>Datum</th><th>Dobavitelj</th><th>St. racuna</th><th>Neto</th><th>Bruto</th><th>Akcija</th></tr></thead><tbody>{filteredNakupi.map((n) => <tr key={n.id}><td data-label="Datum">{d(n.datum)}</td><td data-label="Dobavitelj">{n.dobavitelj}</td><td data-label="St. racuna">{n.stevilka_racuna}</td><td data-label="Neto">{money(n.neto_znesek)}</td><td data-label="Bruto">{money(n.bruto_znesek)}</td><td data-label="Akcija"><button className="btn secondary" onClick={() => openNakupDetail(n.id)}>Podrobnosti</button></td></tr>)}</tbody></table> : <table className="mobile-cards"><thead><tr><th>Datum</th><th>Tip</th><th>Narocnik</th><th>St. DN</th><th>Neto</th><th>Bruto</th><th>Akcija</th></tr></thead><tbody>{filteredProdaja.map((p) => <tr key={`${p.izvor_tip}_${p.id}`}><td data-label="Datum">{d(p.datum)}</td><td data-label="Tip">{p.izvor_tip === "delovna_naloga" ? "Delovna naloga" : "Drugo"}</td><td data-label="Narocnik">{p.kontakt_ime || p.narocnik || "/"}</td><td data-label="St. DN">{p.stevilka_delovnega_naloga || "/"}</td><td data-label="Neto">{money(p.neto_znesek)}</td><td data-label="Bruto">{money(p.bruto_znesek)}</td><td data-label="Akcija"><button className="btn secondary" onClick={() => openSaleDetail(p)}>Podrobnosti</button></td></tr>)}</tbody></table>}</section>{showNakup && <Modal title="Dodaj nakup" onClose={() => setShowNakup(false)}><NakupForm produkti={produkti} onSave={saveNakup} onClose={() => setShowNakup(false)} notify={notify} reload={reload} /></Modal>}{showSale && <Modal title="Dodaj prodajo" onClose={() => setShowSale(false)}><form className="form-grid" onSubmit={saveSale}><label>Datum<input required type="date" max={new Date().toISOString().slice(0, 10)} value={sale.datum} onChange={(e) => setSale({ ...sale, datum: e.target.value })} /></label><label>Opis<input required value={sale.opis} onChange={(e) => setSale({ ...sale, opis: e.target.value })} /></label><label>Narocnik<input value={sale.narocnik} onChange={(e) => setSale({ ...sale, narocnik: e.target.value })} /></label><label>Stevilka racuna<input value={sale.stevilka_racuna} onChange={(e) => setSale({ ...sale, stevilka_racuna: e.target.value })} /></label><label>Neto znesek<input required type="number" step="0.01" value={sale.neto_znesek} onChange={(e) => setSale({ ...sale, neto_znesek: e.target.value })} /></label><label>DDV<select value={sale.ddv} onChange={(e) => setSale({ ...sale, ddv: e.target.value })}><option value={0}>0%</option><option value={9.5}>9.5%</option><option value={22}>22%</option></select></label><label>Bruto<input readOnly value={money(Number(sale.neto_znesek || 0) * (1 + Number(sale.ddv) / 100))} /></label><button className="btn primary">Shrani prihodek</button></form></Modal>}{detailNakup && <NakupDetailModal nakup={detailNakup} onClose={() => setDetailNakup(null)} />}{detailSale && (detailSale.izvor_tip === "delovna_naloga" ? <DetailModal naloga={detailSale} role={role} onClose={() => setDetailSale(null)} reload={loadProdaja} notify={notify} onEdit={() => notify("Urejanje iz tega pogleda ni omogoceno.", "error")} /> : <Modal title="Podrobnosti prihodka" onClose={() => setDetailSale(null)}><div className="detail-grid"><div><span>Datum</span><strong>{d(detailSale.datum)}</strong></div><div><span>Narocnik</span><strong>{detailSale.narocnik || "/"}</strong></div><div><span>Opis</span><strong>{detailSale.opis || "/"}</strong></div><div><span>Neto</span><strong>{money(detailSale.neto_znesek)}</strong></div></div></Modal>)}</div>;
+  return <div className="stack"><div className="filters"><label>Datum od<input type="date" value={summaryFilters.datum_od} onChange={(e) => setSummaryFilters({ ...summaryFilters, datum_od: e.target.value })} /></label><label>Datum do<input type="date" value={summaryFilters.datum_do} onChange={(e) => setSummaryFilters({ ...summaryFilters, datum_do: e.target.value })} /></label><button className="btn secondary" onClick={() => setSummaryFilters({ datum_od: "", datum_do: "" })}>Pocisti obdobje</button></div><section className="kpi-grid"><div className={cx("kpi hero", (summary?.razlika_neto || 0) >= 0 ? "positive" : "negative")}><span>Razlika</span><strong>{money(summary?.razlika_neto)}</strong><small>Bruto {money(summary?.razlika_bruto)}</small></div><div className="kpi"><span>Skupni prihodki</span><strong>{money(summary?.skupni_prihodi_neto)}</strong><small>Bruto {money(summary?.skupni_prihodi_bruto)}</small></div><div className="kpi"><span>Skupni stroski</span><strong>{money(summary?.skupni_stroski_neto)}</strong><small>Bruto {money(summary?.skupni_stroski_bruto)}</small></div><div className={cx("kpi warning", (summary?.razlika_ddv || 0) < 0 && "negative")}><span>Razlika DDV</span><strong>{money(summary?.razlika_ddv)}</strong><small>Prihodki {money(summary?.ddv_prihodki)} / stroski {money(summary?.ddv_stroski)}</small></div></section><section className="panel"><div className="section-head"><div className="segmented"><button className={cx(tab === "nakupi" && "active")} onClick={() => setTab("nakupi")}>NAKUPI</button><button className={cx(tab === "prodaja" && "active")} onClick={() => setTab("prodaja")}>PRODAJA</button></div>{tab === "nakupi" ? <button className="btn primary" onClick={() => setShowNakup(true)}>+ Dodaj nakup</button> : <button className="btn primary" onClick={() => setShowSale(true)}>+ Dodaj prodajo</button>}</div>{tab === "nakupi" && <div className="filters"><label>Iskanje<input value={nakupFilters.search} onChange={(e) => setNakupFilters({ ...nakupFilters, search: e.target.value })} /></label></div>}{tab === "prodaja" && <div className="filters"><label>Iskanje (Narocnik, St. DN, Material)<input value={prodajaFilters.search} onChange={(e) => setProdajaFilters({ ...prodajaFilters, search: e.target.value })} placeholder="Narocnik, st. DN, koda materiala..." /></label><label>Tip<select value={prodajaFilters.tip} onChange={(e) => setProdajaFilters({ ...prodajaFilters, tip: e.target.value })}><option value="">Vsi</option><option value="delovna_naloga">Delovna naloga</option><option value="drugo">Drugo</option></select></label></div>}{tab === "nakupi" ? <table className="mobile-cards"><thead><tr><th>Datum</th><th>Dobavitelj</th><th>St. racuna</th><th>Neto</th><th>Bruto</th><th>Akcija</th></tr></thead><tbody>{filteredNakupi.map((n) => <tr key={n.id}><td data-label="Datum">{d(n.datum)}</td><td data-label="Dobavitelj">{n.dobavitelj}</td><td data-label="St. racuna">{n.stevilka_racuna}</td><td data-label="Neto">{money(n.neto_znesek)}</td><td data-label="Bruto">{money(n.bruto_znesek)}</td><td data-label="Akcija"><button className="btn secondary" onClick={() => openNakupDetail(n.id)}>Podrobnosti</button></td></tr>)}</tbody></table> : <table className="mobile-cards"><thead><tr><th>Datum</th><th>Tip</th><th>Narocnik</th><th>St. DN</th><th>Neto</th><th>Bruto</th><th>Akcija</th></tr></thead><tbody>{filteredProdaja.map((p) => <tr key={`${p.izvor_tip}_${p.id}`}><td data-label="Datum">{d(p.datum)}</td><td data-label="Tip">{p.izvor_tip === "delovna_naloga" ? "Delovna naloga" : "Drugo"}</td><td data-label="Narocnik">{p.kontakt_ime || p.narocnik || "/"}</td><td data-label="St. DN">{p.stevilka_delovnega_naloga || "/"}</td><td data-label="Neto">{money(p.neto_znesek)}</td><td data-label="Bruto">{money(p.bruto_znesek)}</td><td data-label="Akcija"><button className="btn secondary" onClick={() => openSaleDetail(p)}>Podrobnosti</button></td></tr>)}</tbody></table>}</section>{showNakup && <Modal title="Dodaj nakup" onClose={() => setShowNakup(false)}><NakupForm produkti={produkti} onSave={saveNakup} onClose={() => setShowNakup(false)} notify={notify} reload={reload} /></Modal>}{showSale && <Modal title="Dodaj prodajo" onClose={() => setShowSale(false)}><form className="form-grid" onSubmit={saveSale}><label>Datum<input required type="date" max={new Date().toISOString().slice(0, 10)} value={sale.datum} onChange={(e) => setSale({ ...sale, datum: e.target.value })} /></label><label>Opis<input required value={sale.opis} onChange={(e) => setSale({ ...sale, opis: e.target.value })} /></label><label>Narocnik<input value={sale.narocnik} onChange={(e) => setSale({ ...sale, narocnik: e.target.value })} /></label><label>Stevilka racuna<input value={sale.stevilka_racuna} onChange={(e) => setSale({ ...sale, stevilka_racuna: e.target.value })} /></label><label>Neto znesek<input required type="number" step="0.01" value={sale.neto_znesek} onChange={(e) => setSale({ ...sale, neto_znesek: e.target.value })} /></label><label>DDV<select value={sale.ddv} onChange={(e) => setSale({ ...sale, ddv: e.target.value })}><option value={0}>0%</option><option value={9.5}>9.5%</option><option value={22}>22%</option></select></label><label>Bruto<input readOnly value={money(Number(sale.neto_znesek || 0) * (1 + Number(sale.ddv) / 100))} /></label><button className="btn primary">Shrani prihodek</button></form></Modal>}{detailNakup && <NakupDetailModal nakup={detailNakup} onClose={() => setDetailNakup(null)} notify={notify} reload={async () => { await Promise.all([loadSummary(), loadNakupi()]); await reload(); }} />}{detailSale && (detailSale.izvor_tip === "delovna_naloga" ? <DetailModal naloga={detailSale} role={role} onClose={() => setDetailSale(null)} reload={loadProdaja} notify={notify} onEdit={() => notify("Urejanje iz tega pogleda ni omogoceno.", "error")} /> : <PrihodekDetailModal prihodek={detailSale} onClose={() => setDetailSale(null)} notify={notify} reload={async () => { await Promise.all([loadSummary(), loadProdaja()]); }} />)}</div>;
 }
 
 function StoritveView({ storitve, reload, notify }) {
@@ -515,8 +595,12 @@ function StoritveView({ storitve, reload, notify }) {
   return <div className="stack"><section className="panel"><div className="section-head"><h2>Storitve</h2></div><form className="form-grid" onSubmit={save}><label>Naziv<input required value={form.naziv} onChange={(e) => setForm({ ...form, naziv: e.target.value })} /></label><label>Nabavna cena EUR/ura<input required type="number" step="0.01" value={form.nabavna_cena} onChange={(e) => setForm({ ...form, nabavna_cena: e.target.value })} /></label><label>Prodajna cena EUR/ura<input required type="number" step="0.01" value={form.prodajna_cena} onChange={(e) => setForm({ ...form, prodajna_cena: e.target.value })} /></label><div className="form-actions wide"><button className="btn primary">Shrani</button>{editing && <button type="button" className="btn secondary" onClick={() => { setEditing(null); setForm(empty); }}>Preklici</button>}</div></form><table className="mobile-cards"><thead><tr><th>Naziv</th><th>Nabavna EUR/ura</th><th>Prodajna EUR/ura</th><th>Dobicek EUR/ura</th><th>Akcije</th></tr></thead><tbody>{storitve.map((s) => { const nabavna = Number(s.nabavna_cena || 0); const prodajna = Number(s.prodajna_cena ?? s.eur_ura ?? 0); return <tr key={s.id}><td data-label="Naziv">{s.naziv}</td><td data-label="Nabavna EUR/ura">{money(nabavna)}</td><td data-label="Prodajna EUR/ura">{money(prodajna)}</td><td data-label="Dobicek EUR/ura">{money(prodajna - nabavna)}</td><td data-label="Akcije"><button className="btn secondary" onClick={() => { setEditing(s); setForm({ naziv: s.naziv, nabavna_cena: s.nabavna_cena || "", prodajna_cena: s.prodajna_cena ?? s.eur_ura ?? "" }); }}>Uredi</button> <button className="btn secondary danger" onClick={() => del(s.id)}>Zbrisi</button></td></tr>; })}</tbody></table></section></div>;
 }
 
-function PonudbaView({ produkti, lots, storitve, setPreneseniPodatki, setTab }) {
+function PonudbaView({ produkti, lots, storitve, setPreneseniPodatki, setTab, notify }) {
   const [form, setForm] = useState({ tip: "splosno", materiali: [], storitve: [], dnevniStrosek: { dnevni_strosek: "", stevilo_dni: "" } });
+  const [savedPonudbe, setSavedPonudbe] = useState([]);
+  const [saveName, setSaveName] = useState("");
+  const loadPonudbe = useCallback(() => api.ponudbe().then(setSavedPonudbe).catch((e) => notify?.(e.message, "error")), [notify]);
+  useEffect(() => { loadPonudbe(); }, [loadPonudbe]);
   const setRows = (key, rows) => setForm({ ...form, [key]: rows });
   const materialRows = form.materiali.map((m) => ({ ...m, produkt: produkti.find((p) => Number(p.id) === Number(m.produkt_id)) }));
   const nabavna = materialRows.reduce((s, m) => s + materialQtyM2(m.kolicina_tm, m.produkt) * Number(m.produkt?.nabavna_cena || 0), 0);
@@ -534,7 +618,36 @@ function PonudbaView({ produkti, lots, storitve, setPreneseniPodatki, setTab }) 
     setPreneseniPodatki({ ...emptyTask(form.tip), materiali, storitve: form.storitve, dnevniStrosek: form.dnevniStrosek });
     setTab("naloge");
   }
-  return <div className="stack"><section className="panel form-grid"><div className="segmented wide"><button className={cx(form.tip === "splosno" && "active")} onClick={() => setForm({ ...form, tip: "splosno" })}>Splosno</button><button className={cx(form.tip === "vozila" && "active")} onClick={() => setForm({ ...form, tip: "vozila" })}>Vozila</button></div><div className="form-section wide"><div className="section-head"><h3>Materiali</h3><button className="btn secondary" onClick={() => setRows("materiali", [...form.materiali, { produkt_id: "", kolicina_tm: "" }])}>+ Dodaj material</button></div>{form.materiali.map((m, i) => { const produkt = produkti.find((p) => Number(p.id) === Number(m.produkt_id)); return <div className="material-row" key={i}><SearchSelect options={produkti.map((p) => ({ value: p.id, label: `${p.koda} - ${p.naziv_produkta}`, sub: p.dobavitelj || "" }))} value={m.produkt_id} onChange={(val) => setRows("materiali", form.materiali.map((r, idx) => idx === i ? { ...r, produkt_id: val } : r))} placeholder="Izberi produkt" /><input type="number" step="0.01" value={m.kolicina_tm} onChange={(e) => setRows("materiali", form.materiali.map((r, idx) => idx === i ? { ...r, kolicina_tm: e.target.value } : r))} placeholder={produkt?.tip === "adr" ? "Kos" : produkt?.tip === "tabla" ? "m2" : "tm"} /><span>{money(materialQtyM2(m.kolicina_tm, produkt) * Number(produkt?.prodajna_cena || 0))}</span><button className="icon-btn danger" onClick={() => setRows("materiali", form.materiali.filter((_, idx) => idx !== i))}>x</button></div>; })}</div><div className="form-section wide"><div className="section-head"><h3>Storitve</h3><button className="btn secondary" onClick={() => setRows("storitve", [...form.storitve, { storitev_id: "", stevilo_ur: "" }])}>+ Dodaj storitev</button></div>{form.storitve.map((s, i) => <div className="material-row" key={i}><SearchSelect options={storitve.map((sv) => ({ value: sv.id, label: sv.naziv, sub: `${sv.prodajna_cena ?? sv.eur_ura} EUR/uro` }))} value={s.storitev_id} onChange={(val) => setRows("storitve", form.storitve.map((r, idx) => idx === i ? { ...r, storitev_id: val } : r))} placeholder="Izberi storitev" /><input type="number" step="0.01" value={s.stevilo_ur} onChange={(e) => setRows("storitve", form.storitve.map((r, idx) => idx === i ? { ...r, stevilo_ur: e.target.value } : r))} placeholder="Ure" /><span>{money(calcStoritveTotal([s], storitve))}</span><button className="icon-btn danger" onClick={() => setRows("storitve", form.storitve.filter((_, idx) => idx !== i))}>x</button></div>)}</div><div className="form-section wide"><h3>Dnevni strosek</h3><div className="form-grid"><label>EUR/dan<input type="number" step="0.01" value={form.dnevniStrosek.dnevni_strosek} onChange={(e) => setForm({ ...form, dnevniStrosek: { ...form.dnevniStrosek, dnevni_strosek: e.target.value } })} /></label><label>Dni<input type="number" min="1" value={form.dnevniStrosek.stevilo_dni} onChange={(e) => setForm({ ...form, dnevniStrosek: { ...form.dnevniStrosek, stevilo_dni: e.target.value } })} /></label><label>Skupaj<input readOnly value={money(dnevniTotal)} /></label></div></div><div className="panel wide"><h3>Povzetek ponudbe</h3><p>Nabavna vrednost materialov: <strong>{money(nabavna)}</strong></p><p>Prodajna vrednost materialov: <strong>{money(prodajna)}</strong></p><p>Storitve nabavno: <strong>{money(storitveCost)}</strong></p><p>Storitve prodajno: <strong>{money(storitveTotal)}</strong></p><p>Dnevni strosek: <strong>{money(dnevniTotal)}</strong></p><hr /><p>Skupna prodajna vrednost: <strong>{money(totalSale)}</strong></p><p>Skupna nabavna vrednost: <strong>{money(totalCost)}</strong></p><p>Marza: <strong>{money(totalSale - totalCost)} ({totalSale ? (((totalSale - totalCost) / totalSale) * 100).toFixed(1) : 0}%)</strong></p><button className="btn primary" onClick={prenesiVNalogo}>Prenesi v Delovni Nalog</button></div></section></div>;
+  async function savePonudba() {
+    const naziv = saveName.trim();
+    if (!naziv) { notify?.("Vnesi naziv ponudbe.", "error"); return; }
+    await api.createPonudba({
+      naziv,
+      tip: form.tip,
+      materiali: form.materiali.map((m) => ({ produkt_id: m.produkt_id, kolicina: m.kolicina_tm })),
+      storitve: form.storitve,
+      dnevniStrosek: form.dnevniStrosek
+    });
+    setSaveName("");
+    notify?.("Ponudba je shranjena.");
+    await loadPonudbe();
+  }
+  function loadPonudba(ponudba) {
+    setForm({
+      tip: ponudba.tip || "splosno",
+      materiali: (ponudba.materiali || []).map((m) => ({ produkt_id: m.produkt_id, kolicina_tm: m.kolicina })),
+      storitve: (ponudba.storitve || []).map((s) => ({ storitev_id: s.storitev_id, stevilo_ur: s.stevilo_ur })),
+      dnevniStrosek: ponudba.dnevniStrosek || { dnevni_strosek: "", stevilo_dni: "" }
+    });
+    notify?.("Ponudba je nalozena.");
+  }
+  async function deletePonudba(id) {
+    if (!window.confirm("Ali res zelis zbrisati ponudbo?")) return;
+    await api.deletePonudba(id);
+    notify?.("Ponudba je izbrisana.");
+    await loadPonudbe();
+  }
+  return <div className="stack"><section className="panel form-grid"><div className="form-section wide"><div className="section-head"><h3>Shranjene ponudbe</h3><div className="form-actions"><input placeholder="Naziv ponudbe" value={saveName} onChange={(e) => setSaveName(e.target.value)} /><button className="btn secondary" type="button" onClick={savePonudba}>Shrani ponudbo</button></div></div><div className="dense-list">{savedPonudbe.length === 0 && <p className="muted">Ni shranjenih ponudb.</p>}{savedPonudbe.map((p) => <div className="work-item" key={p.id}><div><strong>{p.naziv}</strong><span>{p.tip === "vozila" ? "Vozila" : "Splosno"} - {d(p.created_at)}</span></div><div className="form-actions"><button className="btn secondary" type="button" onClick={() => loadPonudba(p)}>Nalozi</button><button className="btn secondary danger" type="button" onClick={() => deletePonudba(p.id)}>Zbrisi</button></div></div>)}</div></div><div className="segmented wide"><button className={cx(form.tip === "splosno" && "active")} onClick={() => setForm({ ...form, tip: "splosno" })}>Splosno</button><button className={cx(form.tip === "vozila" && "active")} onClick={() => setForm({ ...form, tip: "vozila" })}>Vozila</button></div><div className="form-section wide"><div className="section-head"><h3>Materiali</h3><button className="btn secondary" onClick={() => setRows("materiali", [...form.materiali, { produkt_id: "", kolicina_tm: "" }])}>+ Dodaj material</button></div>{form.materiali.map((m, i) => { const produkt = produkti.find((p) => Number(p.id) === Number(m.produkt_id)); return <div className="material-row" key={i}><SearchSelect options={produkti.map((p) => ({ value: p.id, label: `${p.koda} - ${p.naziv_produkta}`, sub: p.dobavitelj || "" }))} value={m.produkt_id} onChange={(val) => setRows("materiali", form.materiali.map((r, idx) => idx === i ? { ...r, produkt_id: val } : r))} placeholder="Izberi produkt" /><input type="number" step="0.01" value={m.kolicina_tm} onChange={(e) => setRows("materiali", form.materiali.map((r, idx) => idx === i ? { ...r, kolicina_tm: e.target.value } : r))} placeholder={produkt?.tip === "adr" ? "Kos" : produkt?.tip === "tabla" ? "m2" : "tm"} /><span>{money(materialQtyM2(m.kolicina_tm, produkt) * Number(produkt?.prodajna_cena || 0))}</span><button className="icon-btn danger" onClick={() => setRows("materiali", form.materiali.filter((_, idx) => idx !== i))}>x</button></div>; })}</div><div className="form-section wide"><div className="section-head"><h3>Storitve</h3><button className="btn secondary" onClick={() => setRows("storitve", [...form.storitve, { storitev_id: "", stevilo_ur: "" }])}>+ Dodaj storitev</button></div>{form.storitve.map((s, i) => <div className="material-row" key={i}><SearchSelect options={storitve.map((sv) => ({ value: sv.id, label: sv.naziv, sub: `${sv.prodajna_cena ?? sv.eur_ura} EUR/uro` }))} value={s.storitev_id} onChange={(val) => setRows("storitve", form.storitve.map((r, idx) => idx === i ? { ...r, storitev_id: val } : r))} placeholder="Izberi storitev" /><input type="number" step="0.01" value={s.stevilo_ur} onChange={(e) => setRows("storitve", form.storitve.map((r, idx) => idx === i ? { ...r, stevilo_ur: e.target.value } : r))} placeholder="Ure" /><span>{money(calcStoritveTotal([s], storitve))}</span><button className="icon-btn danger" onClick={() => setRows("storitve", form.storitve.filter((_, idx) => idx !== i))}>x</button></div>)}</div><div className="form-section wide"><h3>Dnevni strosek</h3><div className="form-grid"><label>EUR/dan<input type="number" step="0.01" value={form.dnevniStrosek.dnevni_strosek} onChange={(e) => setForm({ ...form, dnevniStrosek: { ...form.dnevniStrosek, dnevni_strosek: e.target.value } })} /></label><label>Dni<input type="number" min="1" value={form.dnevniStrosek.stevilo_dni} onChange={(e) => setForm({ ...form, dnevniStrosek: { ...form.dnevniStrosek, stevilo_dni: e.target.value } })} /></label><label>Skupaj<input readOnly value={money(dnevniTotal)} /></label></div></div><div className="panel wide"><h3>Povzetek ponudbe</h3><p>Nabavna vrednost materialov: <strong>{money(nabavna)}</strong></p><p>Prodajna vrednost materialov: <strong>{money(prodajna)}</strong></p><p>Storitve nabavno: <strong>{money(storitveCost)}</strong></p><p>Storitve prodajno: <strong>{money(storitveTotal)}</strong></p><p>Dnevni strosek: <strong>{money(dnevniTotal)}</strong></p><hr /><p>Skupna prodajna vrednost: <strong>{money(totalSale)}</strong></p><p>Skupna nabavna vrednost: <strong>{money(totalCost)}</strong></p><p>Marza: <strong>{money(totalSale - totalCost)} ({totalSale ? (((totalSale - totalCost) / totalSale) * 100).toFixed(1) : 0}%)</strong></p><button className="btn primary" onClick={prenesiVNalogo}>Prenesi v Delovni Nalog</button></div></section></div>;
 }
 
 export default function App() {
@@ -563,7 +676,13 @@ export default function App() {
   const initialNaloga = preneseniPodatki;
   if (!authChecked) return <div className="app"><LoadingPopup /></div>;
   if (!user) return <><LoginPage notify={notify} onLogin={loadUser} /><Toast toast={toast} /></>;
-  return <div className="app"><Header user={user} tab={tab} setTab={setTab} logout={logout} /><main className="content">{tab === "zaloga" && <ZalogaView data={zaloga} role={user.role} reload={loadZaloga} notify={notify} />}{tab === "naloge" && <NalogaForm key={initialNaloga ? "prenesi" : "new"} initial={initialNaloga || undefined} lots={lots} storitve={storitve} role={user.role} notify={notify} onSave={async (payload) => { const created = await api.createNaloga(payload); setPreneseniPodatki(null); notify(`Delovni nalog st. ${created.stevilka_delovnega_naloga} je ustvarjen.`); await loadTaskData(); }} />}{tab === "evidenca" && <EvidenceView lots={lots} storitve={storitve} role={user.role} reload={loadTaskData} notify={notify} />}{tab === "storitve" && <StoritveView storitve={storitve} reload={loadStoritve} notify={notify} />}{tab === "ponudba" && <PonudbaView produkti={produkti} lots={lots} storitve={storitve} setPreneseniPodatki={setPreneseniPodatki} setTab={setTab} />}{tab === "analiza" && <AnalysisView produkti={produkti} reload={loadProdukti} notify={notify} role={user.role} />}</main>{loading && <LoadingPopup />}<Toast toast={toast} /></div>;
+  return <div className="app"><Header user={user} tab={tab} setTab={setTab} logout={logout} /><main className="content">{tab === "zaloga" && <ZalogaView data={zaloga} role={user.role} reload={loadZaloga} notify={notify} />}{tab === "naloge" && <NalogaForm key={initialNaloga ? "prenesi" : "new"} initial={initialNaloga || undefined} lots={lots} storitve={storitve} role={user.role} notify={notify} onSave={async (payload) => { const created = await api.createNaloga(payload); setPreneseniPodatki(null); notify(`Delovni nalog st. ${created.stevilka_delovnega_naloga} je ustvarjen.`); await loadTaskData(); }} />}{tab === "evidenca" && <EvidenceView lots={lots} storitve={storitve} role={user.role} reload={loadTaskData} notify={notify} />}{tab === "storitve" && <StoritveView storitve={storitve} reload={loadStoritve} notify={notify} />}{tab === "ponudba" && <PonudbaView produkti={produkti} lots={lots} storitve={storitve} setPreneseniPodatki={setPreneseniPodatki} setTab={setTab} notify={notify} />}{tab === "analiza" && <AnalysisView produkti={produkti} reload={loadProdukti} notify={notify} role={user.role} />}</main>{loading && <LoadingPopup />}<Toast toast={toast} /></div>;
 }
+
+
+
+
+
+
 
 

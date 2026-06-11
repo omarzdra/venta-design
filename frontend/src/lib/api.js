@@ -47,7 +47,9 @@ export const api = {
   createStoritev: (payload) => request("/api/storitve", { method: "POST", body: JSON.stringify(payload) }),
   updateStoritev: (id, payload) => request(`/api/storitve/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   deleteStoritev: (id) => request(`/api/storitve/${id}`, { method: "DELETE" }),
-  lots: (params) => request(`/api/lot_produkti${query(params)}`),
+  lots: (params) => Array.isArray(params)
+    ? request(`/api/lot_produkti${query({ include_ids: params.join(",") })}`)
+    : request(`/api/lot_produkti${query(params)}`),
   updateLot: (id, payload) => request(`/api/lot_produkti/${id}/lot_stevilka`, { method: "PATCH", body: JSON.stringify(payload) }),
   inventure: () => request("/api/inventure"),
   inventura: (id) => request(`/api/inventure/${id}`),
@@ -56,16 +58,24 @@ export const api = {
   nakupi: (params) => request(`/api/nakupi${query(params)}`),
   nakup: (id) => request(`/api/nakupi/${id}`),
   createNakup: (payload) => request("/api/nakupi", { method: "POST", body: JSON.stringify(payload) }),
+  updateNakup: (id, payload) => request(`/api/nakupi/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  deleteNakup: (id) => request(`/api/nakupi/${id}`, { method: "DELETE" }),
   naloge: (params) => request(`/api/naloge${query(params)}`),
   naloga: (id) => request(`/api/naloge/${id}`),
   createNaloga: (payload) => request("/api/naloge", { method: "POST", body: JSON.stringify(payload) }),
   updateNaloga: (id, payload) => request(`/api/naloge/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  deleteNaloga: (id) => request(`/api/naloge/${id}`, { method: "DELETE" }),
   uploadNalogaSlika: (payload) => request("/api/naloge/slike/upload", { method: "POST", body: JSON.stringify(payload) }),
   dokoncajNaloga: (id) => request(`/api/naloge/${id}/dokoncaj`, { method: "PATCH", body: JSON.stringify({}) }),
   potrdiNaloga: (id, payload) => request(`/api/naloge/${id}/potrdi`, { method: "PATCH", body: JSON.stringify(payload) }),
   deleteNalogaSlika: (nalogaId, slikaId) => request(`/api/naloge/${nalogaId}/slike/${slikaId}`, { method: "DELETE" }),
   prihodki: (params) => request(`/api/prihodki${query(params)}`),
   createPrihodek: (payload) => request("/api/prihodki", { method: "POST", body: JSON.stringify(payload) }),
+  updatePrihodek: (id, payload) => request(`/api/prihodki/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  deletePrihodek: (id) => request(`/api/prihodki/${id}`, { method: "DELETE" }),
   analizaSummary: (params) => request(`/api/analiza/summary${query(params)}`),
-  analizaProdaja: (params) => request(`/api/analiza/prodaja${query(params)}`)
+  analizaProdaja: (params) => request(`/api/analiza/prodaja${query(params)}`),
+  ponudbe: () => request("/api/ponudbe"),
+  createPonudba: (payload) => request("/api/ponudbe", { method: "POST", body: JSON.stringify(payload) }),
+  deletePonudba: (id) => request(`/api/ponudbe/${id}`, { method: "DELETE" })
 };
