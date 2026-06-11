@@ -11,6 +11,7 @@ import { Modal } from "./components/ui/Modal";
 import { Toast } from "./components/ui/Toast";
 import { clearForm, loadForm, saveForm } from "./utils/formStorage";
 import { cx, d, money } from "./utils/formatters";
+import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import logoSvg from "./assets/logo.png";
 
 const emptyTask = (tip = "splosno") => ({ tip, naziv_projekta: "", status: "v_izdelavi", stevilka_racuna: "", opis: "", opomba: "", kontakt_ime: "", kontakt_gsm: "", kontakt_email: "", cena_dela_neto: "", ddv_stopnja: 22, vozilo: { registrska_stevilka: "", stevilka_sasije: "", znamka_vozila: "" }, poskodbe: [], materiali: [], storitve: [], dnevniStrosek: { dnevni_strosek: "", stevilo_dni: "" }, slike: [] });
@@ -595,6 +596,7 @@ function AnalysisView({ produkti, reload, notify, role }) {
   const [summaryFilters, setSummaryFilters] = useState({ datum_od: "", datum_do: "" });
   const [detailNakup, setDetailNakup] = useState(null);
   const [detailSale, setDetailSale] = useState(null);
+  const debouncedProdajaSearch = useDebouncedValue(prodajaFilters.search, 250);
   const loadSummary = useCallback(() => api.analizaSummary(summaryFilters).then(setSummary).catch((e) => notify(e.message, "error")), [notify, summaryFilters]);
   const loadNakupi = useCallback(() => api.nakupi({}).then(setNakupi).catch((e) => notify(e.message, "error")), [notify]);
   const loadProdaja = useCallback(() => api.analizaProdaja({}).then(setProdaja).catch((e) => notify(e.message, "error")), [notify]);
@@ -609,7 +611,7 @@ function AnalysisView({ produkti, reload, notify, role }) {
   async function openSaleDetail(item) { try { setDetailSale(item.izvor_tip === "delovna_naloga" ? { ...(await api.naloga(item.id)), izvor_tip: "delovna_naloga" } : item); } catch (e) { notify(e.message, "error"); } }
   const filteredNakupi = nakupi.filter((n) => !nakupFilters.search || `${n.dobavitelj} ${n.stevilka_racuna}`.toLowerCase().includes(nakupFilters.search.toLowerCase()));
   const filteredProdaja = prodaja.filter((p) => {
-    const q = normalizeSearch(prodajaFilters.search);
+    const q = normalizeSearch(debouncedProdajaSearch);
     if (q && !normalizeSearch(`${p.narocnik || p.kontakt_ime || ""} ${p.stevilka_delovnega_naloga || ""} ${p.stevilka_racuna || ""} ${p.vozilo?.registrska_stevilka || ""} ${p.vozilo?.stevilka_sasije || ""}`).includes(q)) return false;
     if (prodajaFilters.tip && p.izvor_tip !== prodajaFilters.tip) return false;
     return true;
@@ -696,10 +698,9 @@ export default function App() {
   const notify = useCallback((message, type = "success") => { setToast({ message, type }); setTimeout(() => setToast(null), 5000); }, []);
   const loadZaloga = useCallback(async function loadZaloga() { setZaloga(await api.zaloga()); }, []);
   const loadProdukti = useCallback(async function loadProdukti() { setProdukti(await api.produkti()); }, []);
-  const loadLots = useCallback(async function loadLots() { setLots(await api.lots()); }, []);
   const loadStoritve = useCallback(async function loadStoritve() { setStoritve(await api.storitve()); }, []);
-  const loadTaskData = useCallback(async function loadTaskData() { await Promise.all([loadLots(), loadStoritve()]); }, [loadLots, loadStoritve]);
-  const loadOfferData = useCallback(async function loadOfferData() { await Promise.all([loadProdukti(), loadLots(), loadStoritve()]); }, [loadProdukti, loadLots, loadStoritve]);
+  const loadTaskData = useCallback(async function loadTaskData() { const data = await api.taskFormLookups(); setLots(data.lots || []); setStoritve(data.storitve || []); }, []);
+  const loadOfferData = useCallback(async function loadOfferData() { const data = await api.offerFormLookups(); setProdukti(data.produkti || []); setLots(data.lots || []); setStoritve(data.storitve || []); }, []);
   const loadUser = useCallback(async function loadUser() { const profile = await api.me(); setUser(profile); return profile; }, []);
   const boot = useCallback(async function boot(session, showLoading = false, markAuthChecked = false) { if (showLoading) setLoading(true); try { if (session) { await loadUser(); } else { setUser(null); } } catch { setUser(null); } finally { if (showLoading) setLoading(false); if (markAuthChecked) setAuthChecked(true); } }, [loadUser]);
   useEffect(() => { let mounted = true; supabase.auth.getSession().then(({ data }) => { if (mounted) boot(data.session, true, true); }).catch((e) => { if (mounted) { notify(e.message, "error"); setLoading(false); setAuthChecked(true); } }); const { data } = supabase.auth.onAuthStateChange((_event, session) => { setTimeout(() => { if (mounted) boot(session, false); }, 0); }); return () => { mounted = false; data.subscription.unsubscribe(); }; }, [boot, notify]);
