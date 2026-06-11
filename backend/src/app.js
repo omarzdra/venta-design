@@ -755,6 +755,20 @@ function nalogaPayload(body, isCreate = false, current = null, role = "admin") {
   return data;
 }
 
+function missingConfirmFields(naloga) {
+  const missing = [];
+  const isMissing = (value) => !value || String(value).trim() === "" || String(value).trim() === "/";
+  if (isMissing(naloga.naziv_projekta)) missing.push("ime projekta");
+  if (isMissing(naloga.kontakt_ime)) missing.push("narocnik");
+  if (isMissing(naloga.stevilka_racuna)) missing.push("stevilka racuna");
+  if (toNumber(naloga.cena_dela_neto, 0) <= 0) missing.push("cena");
+  if (naloga.tip === "vozila") {
+    if (isMissing(naloga.vozilo?.znamka_vozila)) missing.push("znamka vozila");
+    if (isMissing(naloga.vozilo?.registrska_stevilka)) missing.push("registrska stevilka");
+  }
+  return missing;
+}
+
 app.get("/api/naloge", permit("admin", "grega"), async (req, res) => {
   const { tip, search, status, datum_od, datum_do } = req.query;
   if (!tip) return res.status(400).json({ message: "Query tip je obvezen." });
@@ -824,6 +838,7 @@ app.put("/api/naloge/:id", permit("admin", "grega"), async (req, res) => {
     const id = Number(req.params.id);
     const current = await prisma.delovnaNaloga.findUnique({ where: { id }, include: includeNaloga() });
     if (!current) return res.status(404).json({ message: "Naloga ne obstaja." });
+    if (current.status === "potrjena") throw new Error("Potrjene naloge ni dovoljeno urejati.");
     const nextSlike = (req.body.slike || []).map(String);
     const removedSlike = (current.slike || []).filter((slika) => !nextSlike.includes(slika.url));
     await prisma.$transaction(async (tx) => {
@@ -862,12 +877,11 @@ app.patch("/api/naloge/:id/dokoncaj", permit("admin", "grega"), async (req, res)
 app.patch("/api/naloge/:id/potrdi", permit("admin"), async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const naloga = await prisma.delovnaNaloga.findUnique({ where: { id }, include: { materiali: true } });
+    const naloga = await prisma.delovnaNaloga.findUnique({ where: { id }, include: { vozilo: true } });
     if (!naloga) return res.status(404).json({ message: "Naloga ne obstaja." });
-    if (!naloga.stevilka_racuna) throw new Error("Za potrditev mora biti vpisana številka računa.");
-    if (naloga.tip !== "vb_tisk" && !naloga.materiali.length) throw new Error("Za potrditev mora biti dodan vsaj en material.");
-    const cena = toNumber(naloga.cena_dela_neto, 0);
-    if (!cena || cena <= 0) throw new Error("Za potrditev mora biti vpisana cena (> 0).");
+    if (naloga.status === "potrjena") throw new Error("Naloga je ze potrjena.");
+    const missing = missingConfirmFields(naloga);
+    if (missing.length) throw new Error(`Za potrditev dopolni: ${missing.join(", ")}.`);
     const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "potrjena", potrjena_at: new Date() }, include: includeNaloga() });
     res.json(sanitizeNaloga(updated, req.user.role));
   } catch (error) {
@@ -897,6 +911,9 @@ app.delete("/api/naloge/:id/slike/:slikaId", permit("admin", "grega"), async (re
   try {
     const id = Number(req.params.id);
     const slikaId = Number(req.params.slikaId);
+    const naloga = await prisma.delovnaNaloga.findUnique({ where: { id }, select: { status: true } });
+    if (!naloga) return res.status(404).json({ message: "Naloga ne obstaja." });
+    if (naloga.status === "potrjena") throw new Error("Potrjene naloge ni dovoljeno urejati.");
     const slika = await prisma.delovnaNalogaSlika.findFirst({ where: { id: slikaId, delovna_naloga_id: id } });
     if (!slika) return res.status(404).json({ message: "Slika ne obstaja." });
     await deleteNalogaStorageUrls([slika.url]);

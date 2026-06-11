@@ -81,9 +81,15 @@ small, .muted { color: var(--color-text-muted); }
 .numbers { display: grid; grid-template-columns: repeat(3, minmax(90px, auto)); gap: 12px; text-align: right; font-family: "JetBrains Mono", monospace; }
 .inventory-summary { grid-template-columns: repeat(4, minmax(110px, auto)); align-items: center; }
 .lot-list { border-top: 1px solid var(--color-border); padding: 8px; display: grid; gap: 6px; }
-.lot-row { display: grid; grid-template-columns: 48px 1fr 120px 120px auto; gap: 8px; align-items: center; padding: 8px; background: var(--color-surface); border-radius: 4px; }
+.lot-row { display: grid; grid-template-columns: 48px minmax(140px, .9fr) minmax(260px, 1.6fr) 120px auto; gap: 8px; align-items: center; padding: 8px; background: var(--color-surface); border-radius: 4px; }
 .lot-qty-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 13px; }
 .lot-qty-row.secondary { margin-top: 2px; font-size: 12px; color: var(--color-text-muted); }
+.lot-card-grid { display: grid; grid-template-columns: repeat(3, minmax(92px, 1fr)); gap: 6px; }
+.lot-mini-card { min-height: 58px; border: 1px solid var(--color-border); background: var(--color-surface-2); border-radius: 4px; padding: 7px 8px; display: grid; gap: 2px; }
+.lot-mini-card span { color: var(--color-text-muted); font-family: "JetBrains Mono", monospace; font-size: 10px; text-transform: uppercase; }
+.lot-mini-card strong { font-family: "JetBrains Mono", monospace; font-size: 13px; }
+.lot-mini-card small { color: var(--color-text-muted); }
+.offer-name-input { min-width: 220px; }
 .inventory-lot-row {
   grid-template-columns: minmax(120px, 1.1fr) repeat(4, minmax(120px, 1fr)) auto;
   align-items: stretch;
