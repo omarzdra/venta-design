@@ -1,11 +1,12 @@
 const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
 const crypto = require("crypto");
-const { PrismaClient } = require("@prisma/client");
-const { createClient } = require("@supabase/supabase-js");
-
-dotenv.config();
+const env = require("./config/env");
+const corsMiddleware = require("./config/cors");
+const prisma = require("./config/prisma");
+const supabase = require("./config/supabase");
+const requestId = require("./middleware/requestId");
+const notFound = require("./middleware/notFound");
+const errorHandler = require("./middleware/errorHandler");
 
 process.on('uncaughtException', (err) => {
   console.error('UNCAUGHT EXCEPTION:', err);
@@ -17,35 +18,20 @@ process.on('unhandledRejection', (err) => {
 });
 
 const app = express();
-const prisma = new PrismaClient();
-const supabaseUrl = process.env.SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const nalogaSlikeBucket = process.env.NALOGA_SLIKE_BUCKET || "naloga-slike";
-const maintenanceSecret = process.env.MAINTENANCE_SECRET;
-const allowDevAuth = process.env.NODE_ENV !== "production" && process.env.DEV_AUTH_BYPASS === "true";
-const allowedOrigins = (process.env.CORS_ORIGINS || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-const supabase = supabaseUrl && serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } }) : null;
+const nalogaSlikeBucket = env.nalogaSlikeBucket;
+const maintenanceSecret = env.maintenanceSecret;
+const allowDevAuth = env.allowDevAuth;
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || !allowedOrigins.length || allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error("CORS origin ni dovoljen."));
-  },
-  credentials: false,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+app.use(requestId);
+app.use(corsMiddleware());
 
 app.use(express.json({ limit: "15mb" }));
 
 const DDV = [0, 9.5, 22];
-const STATUSES = ["v_izdelavi", "dokoncana", "potrjena"];
+const STATUSES = ["v_izdelavi", "dokoncana", "potrjena", "ni_realizirano"];
 const PRODUCT_TYPES = ["folija", "adr", "tabla"];
 const PURCHASE_CATEGORIES = ["material", "oprema", "lizing", "gorivo", "bancni_stroski", "place", "smeti", "telefon", "najemnina", "posta", "mehanik", "oglasevanje", "pripomocki", "zavarovanje", "drugo"];
-const STATUS_RANK = { v_izdelavi: 0, dokoncana: 1, potrjena: 2 };
+const STATUS_RANK = { ni_realizirano: -1, v_izdelavi: 0, dokoncana: 1, potrjena: 2 };
 
 function toNumber(value, fallback = null) {
   if (value === null || value === undefined || value === "") return fallback;
@@ -75,6 +61,22 @@ function dateRangeWhere(from, to) {
     range.lt = end;
   }
   return { datum: range };
+}
+
+function paginationArgs(query, maxTake = 200) {
+  const take = toNumber(query.take, null);
+  const skip = toNumber(query.skip, null);
+  const args = {};
+  if (take !== null) args.take = Math.min(Math.max(parseInt(take, 10) || 0, 1), maxTake);
+  if (skip !== null) args.skip = Math.max(parseInt(skip, 10) || 0, 0);
+  return args;
+}
+
+function applyArrayPagination(items, query, maxTake = 200) {
+  const args = paginationArgs(query, maxTake);
+  const start = args.skip || 0;
+  const end = args.take ? start + args.take : undefined;
+  return items.slice(start, end);
 }
 
 function storagePathFromUrl(url, bucket = nalogaSlikeBucket) {
@@ -402,6 +404,27 @@ app.get("/api/zaloga", async (req, res) => {
   }));
 });
 
+function serializeLot(lot, role) {
+  const item = { ...lot, kolicina_m2: calcM2(lot.kolicina_tm, lot.produkt) };
+  if (role !== "grega") return item;
+  return {
+    id: item.id,
+    produkt_id: item.produkt_id,
+    lot_stevilka: item.lot_stevilka,
+    kolicina_tm: item.kolicina_tm,
+    kolicina_m2: item.kolicina_m2,
+    datum_prevzema: item.datum_prevzema,
+    produkt: item.produkt ? {
+      id: item.produkt.id,
+      koda: item.produkt.koda,
+      naziv_produkta: item.produkt.naziv_produkta,
+      tip: item.produkt.tip,
+      sirina: item.produkt.sirina,
+      dobavitelj: item.produkt.dobavitelj
+    } : undefined
+  };
+}
+
 app.get("/api/lot_produkti", async (req, res) => {
   const where = {};
   if (req.query.produkt_id) where.produkt_id = Number(req.query.produkt_id);
@@ -415,26 +438,28 @@ app.get("/api/lot_produkti", async (req, res) => {
     where.kolicina_tm = { gt: 0 };
   }
   const lots = await prisma.lotProdukt.findMany({ where, include: { produkt: true }, orderBy: { datum_prevzema: "desc" } });
-  res.json(lots.map((lot) => {
-    const item = { ...lot, kolicina_m2: calcM2(lot.kolicina_tm, lot.produkt) };
-    if (req.user.role !== "grega") return item;
-    return {
-      id: item.id,
-      produkt_id: item.produkt_id,
-      lot_stevilka: item.lot_stevilka,
-      kolicina_tm: item.kolicina_tm,
-      kolicina_m2: item.kolicina_m2,
-      datum_prevzema: item.datum_prevzema,
-      produkt: item.produkt ? {
-        id: item.produkt.id,
-        koda: item.produkt.koda,
-        naziv_produkta: item.produkt.naziv_produkta,
-        tip: item.produkt.tip,
-        sirina: item.produkt.sirina,
-        dobavitelj: item.produkt.dobavitelj
-      } : undefined
-    };
-  }));
+  res.json(lots.map((lot) => serializeLot(lot, req.user.role)));
+});
+
+app.get("/api/bootstrap", async (req, res) => {
+  res.json({ user: req.user, version: process.env.npm_package_version || "1.0.0" });
+});
+
+app.get("/api/lookups/task-form", async (req, res) => {
+  const [lots, storitve] = await Promise.all([
+    prisma.lotProdukt.findMany({ where: { kolicina_tm: { gt: 0 } }, include: { produkt: true }, orderBy: { datum_prevzema: "desc" } }),
+    prisma.storitev.findMany({ orderBy: { naziv: "asc" } })
+  ]);
+  res.json({ lots: lots.map((lot) => serializeLot(lot, req.user.role)), storitve });
+});
+
+app.get("/api/lookups/offer-form", permit("admin"), async (req, res) => {
+  const [produkti, lots, storitve] = await Promise.all([
+    prisma.produkt.findMany({ orderBy: { naziv_produkta: "asc" } }),
+    prisma.lotProdukt.findMany({ where: { kolicina_tm: { gt: 0 } }, include: { produkt: true }, orderBy: { datum_prevzema: "desc" } }),
+    prisma.storitev.findMany({ orderBy: { naziv: "asc" } })
+  ]);
+  res.json({ produkti, lots: lots.map((lot) => serializeLot(lot, req.user.role)), storitve });
 });
 
 app.patch("/api/lot_produkti/:id/lot_stevilka", permit("admin", "racunovodkinja"), async (req, res) => {
@@ -520,7 +545,8 @@ app.get("/api/nakupi", permit("admin"), async (req, res) => {
   const nakupi = await prisma.nakup.findMany({
     where,
     select: { id: true, datum: true, dobavitelj: true, stevilka_racuna: true, neto_znesek: true, bruto_znesek: true, created_at: true },
-    orderBy: { datum: "desc" }
+    orderBy: { datum: "desc" },
+    ...paginationArgs(req.query)
   });
   res.json(nakupi);
 });
@@ -729,7 +755,7 @@ function nalogaPayload(body, isCreate = false, current = null, role = "admin") {
   if (body.tip && !["splosno", "vozila", "vb_tisk"].includes(body.tip)) throw new Error("Tip naloge mora biti splosno, vozila ali VB tisk.");
   const status = body.status || current?.status || "v_izdelavi";
   if (!STATUSES.includes(status)) throw new Error("Neveljaven status naloge.");
-  if (current && STATUS_RANK[status] < STATUS_RANK[current.status]) throw new Error("Statusa ni dovoljeno vračati nazaj.");
+  if (current && status !== "ni_realizirano" && STATUS_RANK[status] < STATUS_RANK[current.status]) throw new Error("Statusa ni dovoljeno vračati nazaj.");
 
   const data = {
     naziv_projekta: body.naziv_projekta,
@@ -786,7 +812,7 @@ app.get("/api/naloge", permit("admin", "grega"), async (req, res) => {
       { vozilo: { is: { stevilka_sasije: { contains: q, mode: "insensitive" } } } }
     ];
   }
-  const naloge = await prisma.delovnaNaloga.findMany({ where, select: nalogaListSelect(), orderBy: { datum: "desc" } });
+  const naloge = await prisma.delovnaNaloga.findMany({ where, select: nalogaListSelect(), orderBy: { datum: "desc" }, ...paginationArgs(req.query) });
   if (req.user.role !== "grega") return res.json(naloge);
   res.json(naloge.map((naloga) => ({
     ...naloga,
@@ -866,6 +892,7 @@ app.patch("/api/naloge/:id/dokoncaj", permit("admin", "grega"), async (req, res)
     const id = Number(req.params.id);
     const current = await prisma.delovnaNaloga.findUnique({ where: { id } });
     if (!current) return res.status(404).json({ message: "Naloga ne obstaja." });
+    if (current.status === "ni_realizirano") throw new Error("Naloga ni realizirana in je ni mogoce oznaciti kot dokoncano.");
     if (STATUS_RANK[current.status] > STATUS_RANK.dokoncana) throw new Error("Potrjene naloge ni dovoljeno vračati nazaj.");
     const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "dokoncana" }, include: includeNaloga() });
     res.json(sanitizeNaloga(updated, req.user.role));
@@ -880,6 +907,7 @@ app.patch("/api/naloge/:id/potrdi", permit("admin"), async (req, res) => {
     const naloga = await prisma.delovnaNaloga.findUnique({ where: { id }, include: { vozilo: true } });
     if (!naloga) return res.status(404).json({ message: "Naloga ne obstaja." });
     if (naloga.status === "potrjena") throw new Error("Naloga je ze potrjena.");
+    if (naloga.status === "ni_realizirano") throw new Error("Naloga ni realizirana in je ni mogoce potrditi.");
     const missing = missingConfirmFields(naloga);
     if (missing.length) throw new Error(`Za potrditev dopolni: ${missing.join(", ")}.`);
     const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "potrjena", potrjena_at: new Date() }, include: includeNaloga() });
@@ -947,7 +975,7 @@ app.get("/api/prihodki", permit("admin"), async (req, res) => {
   if (narocnik) where.narocnik = { contains: String(narocnik), mode: "insensitive" };
   Object.assign(where, dateRangeWhere(datum_od, datum_do));
   if (znesek_od || znesek_do) where.neto_znesek = { ...(znesek_od ? { gte: Number(znesek_od) } : {}), ...(znesek_do ? { lte: Number(znesek_do) } : {}) };
-  res.json(await prisma.prihodekManual.findMany({ where, orderBy: { datum: "desc" } }));
+  res.json(await prisma.prihodekManual.findMany({ where, orderBy: { datum: "desc" }, ...paginationArgs(req.query) }));
 });
 
 app.get("/api/prihodki/:id", permit("admin"), async (req, res) => {
@@ -1046,10 +1074,11 @@ app.get("/api/analiza/prodaja", permit("admin"), async (req, res) => {
     prisma.delovnaNaloga.findMany({ where: nalogeWhere, select: nalogaListSelect(), orderBy: { datum: "desc" } }),
     prisma.prihodekManual.findMany({ where: dateWhere, orderBy: { datum: "desc" } })
   ]);
-  res.json([
+  const rows = [
     ...naloge.map((n) => ({ ...n, izvor_tip: "delovna_naloga", neto_znesek: Number(n.cena_dela_neto || 0) + Number(n.cena_materiala || 0), bruto_znesek: Number(n.cena_dela_bruto || 0) + Number(n.cena_materiala || 0) })),
     ...prihodki.map((p) => ({ ...p, izvor_tip: "drugo" }))
-  ].sort((a, b) => new Date(b.datum) - new Date(a.datum)));
+  ].sort((a, b) => new Date(b.datum) - new Date(a.datum));
+  res.json(applyArrayPagination(rows, req.query));
 });
 
 app.get("/api/ponudbe", permit("admin"), async (req, res) => {
@@ -1097,6 +1126,7 @@ app.delete("/api/ponudbe/:id", permit("admin"), async (req, res) => {
   }
 });
 
-app.use((err, req, res, next) => res.status(500).json({ message: err.message }));
+app.use(notFound);
+app.use(errorHandler);
 
 module.exports = app;
