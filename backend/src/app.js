@@ -28,10 +28,10 @@ app.use(corsMiddleware());
 app.use(express.json({ limit: "15mb" }));
 
 const DDV = [0, 9.5, 22];
-const STATUSES = ["v_izdelavi", "dokoncana", "potrjena"];
+const STATUSES = ["v_izdelavi", "dokoncana", "potrjena", "ni_realizirano"];
 const PRODUCT_TYPES = ["folija", "adr", "tabla"];
 const PURCHASE_CATEGORIES = ["material", "oprema", "lizing", "gorivo", "bancni_stroski", "place", "smeti", "telefon", "najemnina", "posta", "mehanik", "oglasevanje", "pripomocki", "zavarovanje", "drugo"];
-const STATUS_RANK = { v_izdelavi: 0, dokoncana: 1, potrjena: 2 };
+const STATUS_RANK = { ni_realizirano: -1, v_izdelavi: 0, dokoncana: 1, potrjena: 2 };
 
 function toNumber(value, fallback = null) {
   if (value === null || value === undefined || value === "") return fallback;
@@ -755,7 +755,7 @@ function nalogaPayload(body, isCreate = false, current = null, role = "admin") {
   if (body.tip && !["splosno", "vozila", "vb_tisk"].includes(body.tip)) throw new Error("Tip naloge mora biti splosno, vozila ali VB tisk.");
   const status = body.status || current?.status || "v_izdelavi";
   if (!STATUSES.includes(status)) throw new Error("Neveljaven status naloge.");
-  if (current && STATUS_RANK[status] < STATUS_RANK[current.status]) throw new Error("Statusa ni dovoljeno vračati nazaj.");
+  if (current && status !== "ni_realizirano" && STATUS_RANK[status] < STATUS_RANK[current.status]) throw new Error("Statusa ni dovoljeno vračati nazaj.");
 
   const data = {
     naziv_projekta: body.naziv_projekta,
@@ -892,6 +892,7 @@ app.patch("/api/naloge/:id/dokoncaj", permit("admin", "grega"), async (req, res)
     const id = Number(req.params.id);
     const current = await prisma.delovnaNaloga.findUnique({ where: { id } });
     if (!current) return res.status(404).json({ message: "Naloga ne obstaja." });
+    if (current.status === "ni_realizirano") throw new Error("Naloga ni realizirana in je ni mogoce oznaciti kot dokoncano.");
     if (STATUS_RANK[current.status] > STATUS_RANK.dokoncana) throw new Error("Potrjene naloge ni dovoljeno vračati nazaj.");
     const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "dokoncana" }, include: includeNaloga() });
     res.json(sanitizeNaloga(updated, req.user.role));
@@ -906,6 +907,7 @@ app.patch("/api/naloge/:id/potrdi", permit("admin"), async (req, res) => {
     const naloga = await prisma.delovnaNaloga.findUnique({ where: { id }, include: { vozilo: true } });
     if (!naloga) return res.status(404).json({ message: "Naloga ne obstaja." });
     if (naloga.status === "potrjena") throw new Error("Naloga je ze potrjena.");
+    if (naloga.status === "ni_realizirano") throw new Error("Naloga ni realizirana in je ni mogoce potrditi.");
     const missing = missingConfirmFields(naloga);
     if (missing.length) throw new Error(`Za potrditev dopolni: ${missing.join(", ")}.`);
     const updated = await prisma.delovnaNaloga.update({ where: { id }, data: { status: "potrjena", potrjena_at: new Date() }, include: includeNaloga() });
