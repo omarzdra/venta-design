@@ -275,16 +275,32 @@ app.post("/api/produkti", permit("admin"), async (req, res) => {
   try {
     requireFields(req.body, ["koda", "naziv_produkta", "tip", "nabavna_cena", "prodajna_cena"]);
     if (!PRODUCT_TYPES.includes(req.body.tip)) throw new Error("Tip produkta mora biti folija, adr ali tabla.");
-    const produkt = await prisma.produkt.create({
-      data: {
-        koda: String(req.body.koda).trim(),
-        naziv_produkta: String(req.body.naziv_produkta).trim(),
-        tip: req.body.tip,
-        sirina: req.body.tip === "folija" ? toNumber(req.body.sirina) : null,
-        nabavna_cena: moneyInput(req.body.nabavna_cena, 0),
-        prodajna_cena: moneyInput(req.body.prodajna_cena, 0),
-        dobavitelj: req.body.dobavitelj || null
+    const produkt = await prisma.$transaction(async (tx) => {
+      const created = await tx.produkt.create({
+        data: {
+          koda: String(req.body.koda).trim(),
+          naziv_produkta: String(req.body.naziv_produkta).trim(),
+          tip: req.body.tip,
+          sirina: req.body.tip === "folija" ? toNumber(req.body.sirina) : null,
+          nabavna_cena: moneyInput(req.body.nabavna_cena, 0),
+          prodajna_cena: moneyInput(req.body.prodajna_cena, 0),
+          dobavitelj: req.body.dobavitelj || null
+        }
+      });
+      const qty = toNumber(req.body.zacetna_kolicina, 0);
+      if (qty > 0) {
+        await tx.lotProdukt.create({
+          data: {
+            produkt_id: created.id,
+            lot_stevilka: null,
+            kolicina_tm: qty,
+            nabavna_cena: moneyInput(req.body.nabavna_cena, 0),
+            prodajna_cena: moneyInput(req.body.prodajna_cena, 0),
+            datum_prevzema: new Date()
+          }
+        });
       }
+      return created;
     });
     res.status(201).json(produkt);
   } catch (error) {
@@ -568,7 +584,9 @@ app.post("/api/nakupi", permit("admin"), async (req, res) => {
       for (const p of postavke) {
         if (!PURCHASE_CATEGORIES.includes(p.kategorija)) throw new Error("Neveljavna kategorija nakupa.");
         const ddv = assertDdv(p.ddv);
-        const neto = toNumber(p.neto_cena, 0);
+        const itemQty = p.kategorija === "material" ? 1 : Math.max(toNumber(p.kolicina, 1) || 1, 0);
+        const itemPrice = p.kategorija === "material" ? toNumber(p.neto_cena, 0) : toNumber(p.cena_postavke ?? p.neto_cena, 0);
+        const neto = p.kategorija === "material" ? itemPrice : itemQty * itemPrice;
         const bruto = neto * (1 + ddv / 100);
         let produkt = null;
         let kolicina_tm = toNumber(p.kolicina_tm);
@@ -581,7 +599,7 @@ app.post("/api/nakupi", permit("admin"), async (req, res) => {
           if (!kolicina_tm && p.kolicina_m2 && produkt.tip === "tabla") kolicina_tm = Number(p.kolicina_m2);
           kolicina_m2 = calcM2(kolicina_tm || 0, produkt);
         }
-        prepared.push({ p, produkt, neto, ddv, bruto, kolicina_tm, kolicina_m2 });
+        prepared.push({ p, produkt, neto, ddv, bruto, kolicina_tm, kolicina_m2, itemQty, itemPrice });
       }
 
       const nakup = await tx.nakup.create({
@@ -616,6 +634,8 @@ app.post("/api/nakupi", permit("admin"), async (req, res) => {
             kategorija: x.p.kategorija,
             opis: x.p.kategorija === "material" ? x.produkt.naziv_produkta : String(x.p.opis || ""),
             neto_cena: moneyInput(x.neto, 0),
+            kolicina: x.itemQty,
+            cena_postavke: moneyInput(x.itemPrice, 0),
             ddv: x.ddv,
             bruto_cena: moneyInput(x.bruto, 0),
             produkt_id: x.produkt?.id || null,
@@ -647,9 +667,11 @@ app.put("/api/nakupi/:id", permit("admin"), async (req, res) => {
         const existing = nakup.postavke.find((ep) => ep.id === Number(p.id));
         if (!existing) continue;
         const ddv = assertDdv(p.ddv ?? existing.ddv);
-        const neto = toNumber(p.neto_cena, Number(existing.neto_cena));
+        const itemQty = existing.kategorija === "material" ? 1 : Math.max(toNumber(p.kolicina, Number(existing.kolicina || 1)) || 1, 0);
+        const itemPrice = existing.kategorija === "material" ? toNumber(p.neto_cena, Number(existing.neto_cena)) : toNumber(p.cena_postavke ?? p.neto_cena, Number(existing.cena_postavke || existing.neto_cena));
+        const neto = existing.kategorija === "material" ? itemPrice : itemQty * itemPrice;
         const bruto = neto * (1 + ddv / 100);
-        await tx.nakupPostavka.update({ where: { id: Number(p.id) }, data: { opis: p.opis !== undefined ? String(p.opis) : existing.opis, neto_cena: moneyInput(neto, 0), ddv, bruto_cena: moneyInput(bruto, 0) } });
+        await tx.nakupPostavka.update({ where: { id: Number(p.id) }, data: { opis: p.opis !== undefined ? String(p.opis) : existing.opis, neto_cena: moneyInput(neto, 0), kolicina: itemQty, cena_postavke: moneyInput(itemPrice, 0), ddv, bruto_cena: moneyInput(bruto, 0) } });
         if (existing.lot_produkt_id && existing.kolicina_m2 && Number(existing.kolicina_m2) > 0) {
           await tx.lotProdukt.update({ where: { id: existing.lot_produkt_id }, data: { nabavna_cena: moneyInput(neto / Number(existing.kolicina_m2), 0) } });
         } else if (existing.lot_produkt_id && existing.kolicina_tm && Number(existing.kolicina_tm) > 0) {
