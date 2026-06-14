@@ -68,6 +68,8 @@ model NakupPostavka {
   kategorija      String
   opis            String
   neto_cena       Decimal   @db.Decimal(12, 2)
+  kolicina        Float?
+  cena_postavke   Decimal?  @db.Decimal(12, 2)
   ddv             Float
   bruto_cena      Decimal   @db.Decimal(12, 2)
   produkt_id      Int?
